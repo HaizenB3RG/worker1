@@ -578,18 +578,18 @@
             </div>
             
             <div class="input-group">
-                <label data-i18n="exp_price_per_liter">💰 Price per Liter (MAD)</label>
-                <input type="number" id="fuel-price-per-liter" placeholder="e.g., 12.50" step="0.01" min="0" oninput="calculateFuelTotal()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <label data-i18n="exp_total_amount">💰 Total Amount (MAD)</label>
+                <input type="number" id="fuel-total-amount" placeholder="e.g., 500" step="0.01" min="0" oninput="calculateFuelFromTotal()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_liters">⛽ Liters</label>
-                <input type="number" id="fuel-liters" placeholder="e.g., 50" step="0.1" min="0" oninput="calculateFuelTotal()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="fuel-liters" placeholder="e.g., 50" step="0.1" min="0" oninput="calculateFuelBidirectional()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
             </div>
             
-            <div style="background: #f0fdf4; border: 2px solid #22c55e; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center;">
-                <div style="font-size: 13px; color: #166534; margin-bottom: 5px;" data-i18n="exp_total_amount">Total Amount</div>
-                <div id="fuel-total-display" style="font-size: 32px; font-weight: bold; color: #15803d;">0.00 MAD</div>
+            <div class="input-group">
+                <label data-i18n="exp_price_per_liter">💰 Price per Liter (MAD)</label>
+                <input type="number" id="fuel-price-per-liter" placeholder="e.g., 12.50" step="0.01" min="0" oninput="calculateFuelFromPrice()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
             </div>
             
             <div class="input-group">
@@ -4155,10 +4155,11 @@
                 document.getElementById('repairModal').style.display = 'flex';
             } else if (type === 'fuel') {
                 document.getElementById('fuel-date').value = today;
-                document.getElementById('fuel-price-per-liter').value = '';
+                document.getElementById('fuel-total-amount').value = '';
                 document.getElementById('fuel-liters').value = '';
+                document.getElementById('fuel-price-per-liter').value = '';
                 document.getElementById('fuel-description').value = '';
-                document.getElementById('fuel-total-display').textContent = '0.00 MAD';
+                lastFuelFieldEdited = null;
                 document.getElementById('fuelModal').style.display = 'flex';
             } else if (type === 'parts') {
                 document.getElementById('parts-date').value = today;
@@ -4179,11 +4180,36 @@
         }
         
         // Calculate fuel total
-        function calculateFuelTotal() {
+        // Bi-directional fuel calculation
+        let lastFuelFieldEdited = null;
+        
+        function calculateFuelFromTotal() {
+            lastFuelFieldEdited = 'total';
+            const totalAmount = parseFloat(document.getElementById('fuel-total-amount').value) || 0;
+            const liters = parseFloat(document.getElementById('fuel-liters').value) || 0;
+            
+            if (liters > 0) {
+                const pricePerLiter = totalAmount / liters;
+                document.getElementById('fuel-price-per-liter').value = pricePerLiter.toFixed(2);
+            }
+        }
+        
+        function calculateFuelFromPrice() {
+            lastFuelFieldEdited = 'price';
             const pricePerLiter = parseFloat(document.getElementById('fuel-price-per-liter').value) || 0;
             const liters = parseFloat(document.getElementById('fuel-liters').value) || 0;
+            
             const total = pricePerLiter * liters;
-            document.getElementById('fuel-total-display').textContent = total.toFixed(2) + ' MAD';
+            document.getElementById('fuel-total-amount').value = total.toFixed(2);
+        }
+        
+        function calculateFuelBidirectional() {
+            // When liters change, update based on last edited field
+            if (lastFuelFieldEdited === 'total') {
+                calculateFuelFromTotal();
+            } else {
+                calculateFuelFromPrice();
+            }
         }
         
         // Save expense
@@ -4220,19 +4246,30 @@
                 
             } else if (type === 'fuel') {
                 const date = document.getElementById('fuel-date').value;
-                const pricePerLiter = parseFloat(document.getElementById('fuel-price-per-liter').value);
+                const totalAmount = parseFloat(document.getElementById('fuel-total-amount').value);
                 const liters = parseFloat(document.getElementById('fuel-liters').value);
+                const pricePerLiter = parseFloat(document.getElementById('fuel-price-per-liter').value);
                 const description = document.getElementById('fuel-description').value;
                 
-                if (!date || !pricePerLiter || !liters || pricePerLiter <= 0 || liters <= 0) {
-                    await customAlert('⚠️ Please fill in all required fields!', '⚠️');
+                // Validate: need at least total+liters OR price+liters
+                if (!date || !liters || liters <= 0) {
+                    await customAlert('⚠️ Please fill in date and liters!', '⚠️');
                     return;
                 }
                 
+                if (!totalAmount && !pricePerLiter) {
+                    await customAlert('⚠️ Please fill in either Total Amount or Price per Liter!', '⚠️');
+                    return;
+                }
+                
+                // Use whichever calculation was done
+                const finalAmount = totalAmount || (pricePerLiter * liters);
+                const finalPricePerLiter = pricePerLiter || (totalAmount / liters);
+                
                 expense.date = date;
-                expense.pricePerLiter = pricePerLiter;
+                expense.pricePerLiter = finalPricePerLiter;
                 expense.liters = liters;
-                expense.amount = pricePerLiter * liters;
+                expense.amount = finalAmount;
                 expense.description = description;
                 
             } else if (type === 'parts') {
@@ -4382,16 +4419,16 @@
                         <input type="date" id="edit-fuel-date" value="${expense.date}" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
                     </div>
                     <div class="input-group">
-                        <label>${t('exp_price_per_liter')}</label>
-                        <input type="number" id="edit-fuel-price" value="${expense.pricePerLiter}" step="0.01" min="0" oninput="calculateEditFuelTotal()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <label>${t('exp_total_amount')}</label>
+                        <input type="number" id="edit-fuel-total" value="${expense.amount}" step="0.01" min="0" oninput="calculateEditFuelFromTotal()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_liters')}</label>
-                        <input type="number" id="edit-fuel-liters" value="${expense.liters}" step="0.1" min="0" oninput="calculateEditFuelTotal()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="number" id="edit-fuel-liters" value="${expense.liters}" step="0.1" min="0" oninput="calculateEditFuelBidirectional()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
                     </div>
-                    <div style="background: #f0fdf4; border: 2px solid #22c55e; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center;">
-                        <div style="font-size: 13px; color: #166534; margin-bottom: 5px;">${t('exp_total_amount')}</div>
-                        <div id="edit-fuel-total-display" style="font-size: 32px; font-weight: bold; color: #15803d;">${expense.amount.toFixed(2)} MAD</div>
+                    <div class="input-group">
+                        <label>${t('exp_price_per_liter')}</label>
+                        <input type="number" id="edit-fuel-price" value="${expense.pricePerLiter}" step="0.01" min="0" oninput="calculateEditFuelFromPrice()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_description')}</label>
@@ -4430,12 +4467,35 @@
             document.getElementById('editExpenseModal').style.display = 'flex';
         }
         
-        // Calculate edit fuel total
-        function calculateEditFuelTotal() {
+        // Calculate edit fuel - bi-directional
+        let lastEditFuelFieldEdited = null;
+        
+        function calculateEditFuelFromTotal() {
+            lastEditFuelFieldEdited = 'total';
+            const totalAmount = parseFloat(document.getElementById('edit-fuel-total').value) || 0;
+            const liters = parseFloat(document.getElementById('edit-fuel-liters').value) || 0;
+            
+            if (liters > 0) {
+                const pricePerLiter = totalAmount / liters;
+                document.getElementById('edit-fuel-price').value = pricePerLiter.toFixed(2);
+            }
+        }
+        
+        function calculateEditFuelFromPrice() {
+            lastEditFuelFieldEdited = 'price';
             const pricePerLiter = parseFloat(document.getElementById('edit-fuel-price').value) || 0;
             const liters = parseFloat(document.getElementById('edit-fuel-liters').value) || 0;
+            
             const total = pricePerLiter * liters;
-            document.getElementById('edit-fuel-total-display').textContent = total.toFixed(2) + ' MAD';
+            document.getElementById('edit-fuel-total').value = total.toFixed(2);
+        }
+        
+        function calculateEditFuelBidirectional() {
+            if (lastEditFuelFieldEdited === 'total') {
+                calculateEditFuelFromTotal();
+            } else {
+                calculateEditFuelFromPrice();
+            }
         }
         
         // Save edited expense
@@ -4463,19 +4523,30 @@
                 
             } else if (expense.type === 'fuel') {
                 const date = document.getElementById('edit-fuel-date').value;
-                const pricePerLiter = parseFloat(document.getElementById('edit-fuel-price').value);
+                const totalAmount = parseFloat(document.getElementById('edit-fuel-total').value);
                 const liters = parseFloat(document.getElementById('edit-fuel-liters').value);
+                const pricePerLiter = parseFloat(document.getElementById('edit-fuel-price').value);
                 const description = document.getElementById('edit-fuel-description').value;
                 
-                if (!date || !pricePerLiter || !liters || pricePerLiter <= 0 || liters <= 0) {
-                    await customAlert('⚠️ Please fill in all required fields!', '⚠️');
+                // Validate: need at least total+liters OR price+liters
+                if (!date || !liters || liters <= 0) {
+                    await customAlert('⚠️ Please fill in date and liters!', '⚠️');
                     return;
                 }
                 
+                if (!totalAmount && !pricePerLiter) {
+                    await customAlert('⚠️ Please fill in either Total Amount or Price per Liter!', '⚠️');
+                    return;
+                }
+                
+                // Use whichever calculation was done
+                const finalAmount = totalAmount || (pricePerLiter * liters);
+                const finalPricePerLiter = pricePerLiter || (totalAmount / liters);
+                
                 data.expenses.unsent[expenseIndex].date = date;
-                data.expenses.unsent[expenseIndex].pricePerLiter = pricePerLiter;
+                data.expenses.unsent[expenseIndex].pricePerLiter = finalPricePerLiter;
                 data.expenses.unsent[expenseIndex].liters = liters;
-                data.expenses.unsent[expenseIndex].amount = pricePerLiter * liters;
+                data.expenses.unsent[expenseIndex].amount = finalAmount;
                 data.expenses.unsent[expenseIndex].description = description;
                 
             } else if (expense.type === 'parts') {
@@ -4522,7 +4593,13 @@
         // Submit expenses
         async function submitExpenses() {
             const data = loadData();
-            const workerName = data.workerName || 'Unknown Worker';
+            const workerName = data.workerName;
+            
+            // Check if worker name is set
+            if (!workerName || workerName.trim() === '') {
+                await customAlert('⚠️ Please set your name in Settings tab before submitting expenses!', '⚠️');
+                return;
+            }
             
             if (!data.expenses || data.expenses.unsent.length === 0) {
                 await customAlert('⚠️ No unsent expenses to submit!', '⚠️');
