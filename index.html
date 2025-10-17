@@ -4848,32 +4848,30 @@
                 const submissionsRef = window.firebaseRef(window.firebaseDB, 'expenseSubmissions_v2');
                 
                 window.firebaseOnValue(submissionsRef, (snapshot) => {
+                    const data = loadData();
+                    const workerName = data.workerName || 'Unknown Worker';
+                    
+                    // Initialize expenses structure if needed
+                    if (!data.expenses) {
+                        data.expenses = { unsent: [], submitted: [] };
+                    }
+                    
                     if (snapshot.exists()) {
                         const submissions = Object.values(snapshot.val());
-                        const data = loadData();
-                        const workerName = data.workerName || 'Unknown Worker';
                         
-                        // Filter submissions for this worker
+                        // Filter submissions for this worker and sync completely
+                        // This replaces the entire submitted array, so deletions are reflected
                         const workerSubmissions = submissions.filter(s => s.workerName === workerName);
-                        
-                        // Update local data
-                        if (!data.expenses) {
-                            data.expenses = { unsent: [], submitted: [] };
-                        }
-                        
-                        // Merge submissions
-                        workerSubmissions.forEach(firebaseSub => {
-                            const localIndex = data.expenses.submitted.findIndex(s => s.timestamp === firebaseSub.timestamp);
-                            if (localIndex === -1) {
-                                data.expenses.submitted.push(firebaseSub);
-                            } else {
-                                data.expenses.submitted[localIndex] = firebaseSub;
-                            }
-                        });
-                        
-                        saveData(data);
-                        renderExpenses();
+                        data.expenses.submitted = workerSubmissions;
+                    } else {
+                        // No submissions in Firebase, clear the submitted array
+                        data.expenses.submitted = [];
                     }
+                    
+                    saveData(data);
+                    renderExpenses();
+                    
+                    console.log('✅ Expense submissions synced from Firebase');
                 });
             } catch (error) {
                 console.error('❌ Error loading expense submissions from Firebase:', error);
