@@ -1746,6 +1746,17 @@
                     }
                 }
             });
+            
+            // ========================================
+            // 💰 LOAD EXPENSES SUBMISSIONS (REAL-TIME)
+            // ========================================
+            console.log('💰 Initializing expenses submissions listener...');
+            loadExpenseSubmissionsFromFirebase();
+            
+            // Initialize expenses view if it exists
+            if (document.getElementById('expenses-view')) {
+                renderExpenses();
+            }
         } // End of initApp()
 
         // Note: initApp() will be called automatically after authentication succeeds
@@ -4867,12 +4878,6 @@
             } catch (error) {
                 console.error('❌ Error loading expense submissions from Firebase:', error);
             }
-        }
-        
-        // Initialize expenses on page load
-        if (document.getElementById('expenses-view')) {
-            renderExpenses();
-            loadExpenseSubmissionsFromFirebase();
         }
         
         // Make firebasePush available globally if not already
