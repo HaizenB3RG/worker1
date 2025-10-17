@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../excavator-timer-admin"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "excavator-timer-admin"
+	}
+}
