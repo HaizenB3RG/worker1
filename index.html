@@ -2295,15 +2295,21 @@
             clearInterval(reminderInterval);
 
             const data = loadData();
+            const endTime = new Date();
+            const workDateStr = endTime.getFullYear() + '-' + 
+                               String(endTime.getMonth() + 1).padStart(2, '0') + '-' + 
+                               String(endTime.getDate()).padStart(2, '0');
+            
             const newSession = {
                 timestamp: Date.now(),
                 jobSite: currentJob.jobSite,
                 clientName: currentJob.clientName,
                 rate: currentJob.rate,
                 startTime: currentJob.startTime,
-                endTime: new Date().toISOString(),
+                endTime: endTime.toISOString(),
                 duration: elapsedTime,
                 payment: calculatePayment(elapsedTime, currentJob.rate),
+                workDate: workDateStr,
                 sent: false
             };
             
@@ -3246,6 +3252,7 @@
                 duration: durationSeconds,
                 payment: payment,
                 entryType: 'time-range', // 🔥 Mark as time-range entry
+                workDate: dateString,
                 sent: false,
                 timestamp: Date.now()
             };
