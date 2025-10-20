@@ -2178,6 +2178,15 @@
         let currentJob = null;
         let reminderInterval = null;
 
+        // Date formatting helper - DD/MM/YYYY format
+        function formatDate(dateInput) {
+            const date = new Date(dateInput);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
         function loadData() {
             const data = localStorage.getItem('excavatorTimer');
             const parsed = data ? JSON.parse(data) : { jobs: [], history: [] };
@@ -2400,7 +2409,7 @@
                     '<button class="delete-history-btn" onclick="deleteHistory(' + actualIndex + ')">' + t('delete') + '</button>' +
                     editBtn +
                     '<div style="font-size: 12px; color: #64748b; margin-bottom: 5px;">' + 
-                    date.toLocaleDateString() + '</div>' +
+                    formatDate(date) + '</div>' +
                     '<div style="font-size: 11px; color: #64748b; margin-bottom: 5px;">' + timeDisplay + '</div>' +
                     '<div style="font-size: 13px; color: #64748b; margin-bottom: 3px;">📍 ' + jobSite + '</div>' +
                     '<div style="font-weight: 600; margin-bottom: 8px;">👤 ' + clientName + '</div>' +
@@ -2975,7 +2984,7 @@
                     const pDate = new Date(p.date);
                     return '<div style="font-size: 11px; color: #64748b; padding: 3px 0;">✅ ' + 
                            p.amount.toFixed(2) + ' MAD - ' + 
-                           pDate.toLocaleDateString() + ' ' + pDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + 
+                           formatDate(pDate) + ' ' + pDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + 
                            '</div>';
                 }).join('');
                 
@@ -2999,9 +3008,23 @@
                     totalPaymentDisplay = '<strong style="color: #2563eb;">' + s.totalPayment + ' MAD</strong>';
                 }
                 
+                // Submission date (when it was created/submitted)
+                const submissionDate = new Date(s.timestamp || s.date);
+                const submissionDateStr = formatDate(submissionDate);
+                const submissionTimeStr = submissionDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                // Work date (actual date of the work - from first session)
+                const workDateStr = s.sessions && s.sessions[0] && s.sessions[0].workDate 
+                    ? formatDate(new Date(s.sessions[0].workDate))
+                    : submissionDateStr;
+                
+                const dateDisplay = workDateStr !== submissionDateStr 
+                    ? '📅 Work: ' + workDateStr + ' <span style="color: #94a3b8; font-size: 10px;">| Submitted: ' + submissionDateStr + ' ' + submissionTimeStr + '</span>'
+                    : '📅 ' + workDateStr + ' <span style="color: #94a3b8; font-size: 10px;">at ' + submissionTimeStr + '</span>';
+                
                 return '<div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid ' + statusColor + ';">' +
                     '<div style="font-size: 12px; color: #64748b; margin-bottom: 5px;">' + 
-                    date.toLocaleDateString() + ' at ' + date.toLocaleTimeString() + '</div>' +
+                    dateDisplay + '</div>' +
                     
                     '<div style="font-size: 13px; color: #64748b; margin-bottom: 3px;">📍 ' + jobSites + '</div>' +
                     '<div style="font-weight: 600; font-size: 16px; color: #2563eb; margin-bottom: 8px;">👤 ' + clientName + '</div>' +
@@ -4350,7 +4373,7 @@
             submitBtn.style.display = 'block';
             
             container.innerHTML = unsentExpenses.map(exp => {
-                const date = new Date(exp.date).toLocaleDateString();
+                const date = formatDate(new Date(exp.date));
                 let icon, title, details;
                 
                 if (exp.type === 'repair') {
@@ -4666,8 +4689,8 @@
             const sorted = [...filtered].sort((a, b) => b.timestamp - a.timestamp);
             
             container.innerHTML = sorted.map(submission => {
-                const date = new Date(submission.date).toLocaleDateString();
-                const time = new Date(submission.date).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                const date = formatDate(new Date(submission.date || submission.timestamp));
+                const time = new Date(submission.date || submission.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
                 
                 let statusBadge;
                 if (submission.status === 'approved') {
