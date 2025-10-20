@@ -2817,7 +2817,7 @@
             const submission = {
                 workerName: workerName,
                     clientName: clientName,
-                date: new Date().toISOString(),
+                    date: clientSessions[0].workDate ? new Date(clientSessions[0].workDate).toISOString() : new Date().toISOString(),
                     sessions: clientSessions,
                 totalHours: formatHM(totalSeconds),
                     totalPayment: Math.floor(totalPayment).toFixed(2),
