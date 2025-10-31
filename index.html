@@ -2816,7 +2816,7 @@
 
             console.log('🔍 DEBUG: First session workDate:', clientSessions[0].workDate);
             console.log('🔍 DEBUG: First session full object:', clientSessions[0]);
-            
+
             const submission = {
                 workerName: workerName,
                     clientName: clientName,
@@ -4732,11 +4732,15 @@
                         details = exp.partName;
                     }
                     
+                    // Format the expense date
+                    const expenseDate = formatDate(new Date(exp.date));
+                    
                     return `
                         <div style="display: flex; justify-content: space-between; padding: 8px; background: #f8fafc; border-radius: 6px; margin-bottom: 5px;">
                             <div style="flex: 1;">
                                 <div style="font-size: 13px; font-weight: 600; color: #1e293b;">${icon} ${title}</div>
                                 <div style="font-size: 11px; color: #64748b;">${details}</div>
+                                <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">📅 ${expenseDate}</div>
                                 ${exp.type === 'parts' && exp.notes ? `<div style="font-size: 10px; color: #6b7280; margin-top: 2px;">📝 ${exp.notes}</div>` : ''}
                             </div>
                             <div style="font-size: 14px; font-weight: 700; color: #dc2626;">
@@ -4750,7 +4754,7 @@
                     <div style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #2563eb;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <div>
-                                <div style="font-size: 11px; color: #64748b;">📅 ${date} ${time}</div>
+                                <div style="font-size: 11px; color: #64748b;">📤 Submitted: ${date} ${time}</div>
                             </div>
                             ${statusBadge}
                         </div>
