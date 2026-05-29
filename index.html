@@ -3078,7 +3078,8 @@
             }
 
             const sorted = [...filteredSubmissions].sort((a, b) => b.timestamp - a.timestamp);
-            container.innerHTML = sorted.slice(0, 10).map((s, index) => {
+            // Show full history (no hard cap) for both Active and Completed tabs.
+            container.innerHTML = sorted.map((s, index) => {
                 const date = new Date(s.date);
                 const status = s.status || 'pending';
                 const statusColor = status === 'approved' ? '#22c55e' : '#f59e0b';
