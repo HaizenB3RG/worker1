@@ -425,6 +425,22 @@
                             ✅ <span data-i18n="completed_submissions">Completed</span> (<span id="completed-count">0</span>)
                         </button>
                     </div>
+
+                    <!-- Financial Summary Banner -->
+                    <div id="submission-financial-summary" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                        <div style="background: #eff6ff; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #bfdbfe;">
+                            <div style="font-size: 11px; color: #1e40af; font-weight: 600;">Total Billed</div>
+                            <div id="submissions-total-billed" style="font-size: 18px; font-weight: bold; color: #2563eb;">0 MAD</div>
+                        </div>
+                        <div style="background: #f0fdf4; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #bbf7d0;">
+                            <div style="font-size: 11px; color: #166534; font-weight: 600;">Total Paid</div>
+                            <div id="submissions-total-paid" style="font-size: 18px; font-weight: bold; color: #22c55e;">0 MAD</div>
+                        </div>
+                        <div style="background: #fef2f2; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #fecaca;">
+                            <div style="font-size: 11px; color: #991b1b; font-weight: 600;">Remaining</div>
+                            <div id="submissions-total-remaining" style="font-size: 18px; font-weight: bold; color: #ef4444;">0 MAD</div>
+                        </div>
+                    </div>
                     
                     <div id="submission-list"></div>
                 </div>
@@ -433,7 +449,7 @@
 
         <div id="expenses-view" class="view">
             <!-- Summary Cards -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
                 <div style="background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                     <div style="font-size: 11px; color: #64748b; margin-bottom: 5px;" data-i18n="exp_today">Today</div>
                     <div style="font-size: 20px; font-weight: bold; color: #dc2626;" id="expenses-today">0 MAD</div>
@@ -445,6 +461,10 @@
                 <div style="background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                     <div style="font-size: 11px; color: #64748b; margin-bottom: 5px;" data-i18n="exp_month">This Month</div>
                     <div style="font-size: 20px; font-weight: bold; color: #dc2626;" id="expenses-month">0 MAD</div>
+                </div>
+                <div style="background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 5px;">All Time</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #dc2626;" id="expenses-all-time">0 MAD</div>
                 </div>
             </div>
 
@@ -3027,7 +3047,16 @@
             const submissions = data.submissions || [];
             const container = document.getElementById('submission-list');
 
-            console.log('Rendering submissions:', submissions); // Debug
+            // Update financial summary across ALL submissions (not filtered by tab).
+            const grandBilled = submissions.reduce((s, sub) => s + parseFloat(sub.totalPayment || 0), 0);
+            const grandPaid = submissions.reduce((s, sub) => s + parseFloat(sub.totalPaid || 0), 0);
+            const grandRemaining = grandBilled - grandPaid;
+            const billedEl = document.getElementById('submissions-total-billed');
+            const paidEl = document.getElementById('submissions-total-paid');
+            const remEl = document.getElementById('submissions-total-remaining');
+            if (billedEl) billedEl.textContent = grandBilled.toFixed(2) + ' MAD';
+            if (paidEl) paidEl.textContent = grandPaid.toFixed(2) + ' MAD';
+            if (remEl) remEl.textContent = grandRemaining.toFixed(2) + ' MAD';
 
             // Categorize submissions
             const activeSubmissions = submissions.filter(s => s.paymentStatus !== 'fully_paid');
@@ -5270,19 +5299,21 @@
             // Calculate totals
             const todayTotal = allExpenses
                 .filter(exp => new Date(exp.date).toDateString() === today)
-                .reduce((sum, exp) => sum + exp.amount, 0);
+                .reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
                 
             const weekTotal = allExpenses
                 .filter(exp => new Date(exp.date) >= weekAgo)
-                .reduce((sum, exp) => sum + exp.amount, 0);
+                .reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
                 
             const monthTotal = allExpenses
                 .filter(exp => new Date(exp.date) >= monthAgo)
-                .reduce((sum, exp) => sum + exp.amount, 0);
+                .reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
+            const allTimeTotal = allExpenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
             
             document.getElementById('expenses-today').textContent = todayTotal.toFixed(2) + ' MAD';
             document.getElementById('expenses-week').textContent = weekTotal.toFixed(2) + ' MAD';
             document.getElementById('expenses-month').textContent = monthTotal.toFixed(2) + ' MAD';
+            document.getElementById('expenses-all-time').textContent = allTimeTotal.toFixed(2) + ' MAD';
         }
         
         // Sync expenses to Firebase
