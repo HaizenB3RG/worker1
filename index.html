@@ -426,6 +426,17 @@
                         </button>
                     </div>
 
+                    <!-- Search by client/date/job site -->
+                    <div style="margin-bottom: 12px;">
+                        <input
+                            id="submission-search-input"
+                            type="text"
+                            oninput="onSubmissionSearchInput(event)"
+                            placeholder="Search by client name, work date, submitted date, or job site..."
+                            style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 13px;"
+                        >
+                    </div>
+
                     <!-- Financial Summary Banner -->
                     <div id="submission-financial-summary" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
                         <div style="background: #eff6ff; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #bfdbfe;">
@@ -1846,6 +1857,7 @@
         // ========================================
         let timeFormat = localStorage.getItem('timeFormat') || '24h';
         let submissionTab = localStorage.getItem('submissionTab') || 'active'; // Track which tab is active
+        let submissionSearchQuery = '';
         
         const translations = {
             en: {
@@ -3042,6 +3054,11 @@
             renderSubmissionHistory();
         }
 
+        function onSubmissionSearchInput(event) {
+            submissionSearchQuery = (event && event.target && event.target.value ? event.target.value : '').trim().toLowerCase();
+            renderSubmissionHistory();
+        }
+
         function renderSubmissionHistory() {
             const data = loadData();
             const submissions = data.submissions || [];
@@ -3068,11 +3085,22 @@
             if (activeCountEl) activeCountEl.textContent = activeSubmissions.length;
             if (completedCountEl) completedCountEl.textContent = completedSubmissions.length;
             
-            // Filter based on current tab
-            const filteredSubmissions = submissionTab === 'active' ? activeSubmissions : completedSubmissions;
+            // Filter based on current tab + search query (name/date/job site).
+            const tabSubmissions = submissionTab === 'active' ? activeSubmissions : completedSubmissions;
+            const filteredSubmissions = tabSubmissions.filter((s) => {
+                if (!submissionSearchQuery) return true;
+                const clientName = (s.clientName || (s.sessions && s.sessions[0] ? (s.sessions[0].clientName || s.sessions[0].job) : '') || '').toLowerCase();
+                const jobSites = (s.sessions ? [...new Set(s.sessions.map(sess => sess.jobSite || sess.job || ''))].join(', ') : '').toLowerCase();
+                const workDateRaw = (s.sessions && s.sessions[0] && s.sessions[0].workDate) ? String(s.sessions[0].workDate).slice(0, 10) : '';
+                const submittedDateRaw = String(s.date || '').slice(0, 10);
+                const searchBlob = `${clientName} ${jobSites} ${workDateRaw} ${submittedDateRaw}`.toLowerCase();
+                return searchBlob.includes(submissionSearchQuery);
+            });
 
             if (filteredSubmissions.length === 0) {
-                const emptyMessage = submissionTab === 'active' ? t('no_active_submissions') : t('no_completed_submissions');
+                const emptyMessage = submissionSearchQuery
+                    ? 'No submissions match your search'
+                    : (submissionTab === 'active' ? t('no_active_submissions') : t('no_completed_submissions'));
                 container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 20px;">' + emptyMessage + '</p>';
                 return;
             }
@@ -3125,6 +3153,16 @@
                 
                 const addPaymentBtn = paymentStatus !== 'fully_paid' 
                     ? '<button onclick="showAddPaymentModal(' + s.timestamp + ')" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 8px;">💰 ' + t('add_payment') + '</button>'
+                    : '';
+                const issueFlagged = !!s.issueFlagged && !s.issueResolved;
+                const issueBtn = issueFlagged
+                    ? '<button disabled style="background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-top: 8px; margin-left: 8px; cursor: not-allowed;">🚩 Issue Reported</button>'
+                    : '<button onclick="markSubmissionIssue(' + s.timestamp + ')" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 8px; margin-left: 8px;">🚩 Report Issue</button>';
+                const issueNoteBlock = issueFlagged
+                    ? '<div style="margin-top: 8px; padding: 8px; background: #fff7ed; border: 1px solid #fdba74; border-radius: 6px;">' +
+                        '<div style="font-size: 11px; font-weight: 700; color: #9a3412;">🚩 Reported to admin for correction</div>' +
+                        '<div style="font-size: 11px; color: #7c2d12; margin-top: 3px;">' + (s.issueNote ? s.issueNote : 'Worker marked this submission as having a problem.') + '</div>' +
+                      '</div>'
                     : '';
                 
                 const clientName = s.clientName || (s.sessions && s.sessions[0] ? (s.sessions[0].clientName || s.sessions[0].job) : 'Unknown');
@@ -3202,8 +3240,62 @@
                         : '') +
                     
                     addPaymentBtn +
+                    issueBtn +
+                    issueNoteBlock +
                     '</div></div>';
             }).join('');
+        }
+
+        async function markSubmissionIssue(timestamp) {
+            const data = loadData();
+            const submissions = data.submissions || [];
+            const idx = submissions.findIndex(s => Number(s.timestamp) === Number(timestamp));
+            if (idx === -1) {
+                await customAlert('Submission not found locally.', '❌');
+                return;
+            }
+
+            const sub = submissions[idx];
+            if (sub.issueFlagged && !sub.issueResolved) {
+                await customAlert('This submission is already marked for admin review.', 'ℹ️');
+                return;
+            }
+
+            const confirmed = await customConfirm(
+                'Mark this submission as having a problem?\n\nAdmin will see this and can edit it.',
+                '🚩'
+            );
+            if (!confirmed) return;
+
+            const note = (window.prompt('Optional note for admin (what is wrong?):', '') || '').trim();
+            const workerName = (data.workerName || localStorage.getItem('workerName') || 'Worker').trim();
+            const nowMs = Date.now();
+            const issuePayload = {
+                issueFlagged: true,
+                issueResolved: false,
+                issueNote: note || '',
+                issueFlaggedAt: nowMs,
+                issueFlaggedBy: workerName,
+            };
+
+            // Update local immediately so worker sees the mark right away.
+            Object.assign(sub, issuePayload);
+            saveData(data);
+            renderSubmissionHistory();
+
+            try {
+                const firebaseKey = sub.firebaseKey || await findFirebaseKeyByTimestamp(timestamp);
+                if (!firebaseKey) {
+                    await customAlert('Marked locally, but Firebase key was not found. Please reconnect and try again.', '⚠️');
+                    return;
+                }
+                const submissionRef = window.firebaseRef(window.firebaseDB, 'submissions_v2/' + firebaseKey);
+                await window.firebaseUpdate(submissionRef, issuePayload);
+                await customAlert('Issue marked successfully. Admin can now review and edit this submission.', '✅');
+            } catch (error) {
+                console.error('❌ Failed to mark issue in Firebase:', error);
+                await customAlert('Marked locally, but failed to sync to Firebase. Please check internet and try again.', '⚠️');
+            }
         }
 
         let manualCalculation = null;
