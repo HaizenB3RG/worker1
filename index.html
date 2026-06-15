@@ -247,29 +247,19 @@
             </div>
 
             <div class="card today-summary">
-                <h3 data-i18n="today_summary">📊 Today's Summary</h3>
-                <div class="summary-grid">
-                    <div class="summary-item">
-                        <div class="value" id="today-hours">0h 0m</div>
-                        <div style="font-size: 12px; opacity: 0.8;" data-i18n="total_time">Total Time</div>
+                <h3 data-i18n="live_submission_finance">💼 Submission Finance</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px;">
+                    <div style="background: #eff6ff; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #bfdbfe;">
+                        <div style="font-size: 11px; color: #1e40af; font-weight: 600;" data-i18n="total_billed">Total Billed</div>
+                        <div id="live-submissions-total-billed" style="font-size: 20px; font-weight: bold; color: #2563eb;">0 MAD</div>
                     </div>
-                    <div class="summary-item">
-                        <div class="value" id="today-payment">0 MAD</div>
-                        <div style="font-size: 12px; opacity: 0.8;" data-i18n="total_payment">Total Earned</div>
+                    <div style="background: #f0fdf4; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #bbf7d0;">
+                        <div style="font-size: 11px; color: #166534; font-weight: 600;" data-i18n="total_paid">Total Paid</div>
+                        <div id="live-submissions-total-paid" style="font-size: 20px; font-weight: bold; color: #22c55e;">0 MAD</div>
                     </div>
-                </div>
-            </div>
-
-            <div class="card today-summary" style="margin-top: 15px;">
-                <h3 data-i18n="total_all_summary">📈 Total ALL Sessions</h3>
-                <div class="summary-grid">
-                    <div class="summary-item">
-                        <div class="value" id="total-hours">0h 0m</div>
-                        <div style="font-size: 12px; opacity: 0.8;" data-i18n="total_time">Total Time</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="value" id="total-payment">0 MAD</div>
-                        <div style="font-size: 12px; opacity: 0.8;" data-i18n="total_payment">Total Payment</div>
+                    <div style="background: #fef2f2; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #fecaca;">
+                        <div style="font-size: 11px; color: #991b1b; font-weight: 600;" data-i18n="remaining_simple">Remaining</div>
+                        <div id="live-submissions-total-remaining" style="font-size: 20px; font-weight: bold; color: #ef4444;">0 MAD</div>
                     </div>
                 </div>
             </div>
@@ -522,7 +512,7 @@
                     
                     <!-- Date Filter Tabs -->
                     <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-                        <button class="expense-date-filter-btn active" onclick="filterSubmittedExpenses('today', event)" style="padding: 8px 16px; border: 2px solid #2563eb; background: #2563eb; color: white; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('today', event)" style="padding: 8px 16px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
                             <span data-i18n="exp_filter_today">Today</span>
                         </button>
                         <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('week', event)" style="padding: 8px 16px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
@@ -531,7 +521,7 @@
                         <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('month', event)" style="padding: 8px 16px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
                             <span data-i18n="exp_filter_month">This Month</span>
                         </button>
-                        <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('all', event)" style="padding: 8px 16px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        <button class="expense-date-filter-btn active" onclick="filterSubmittedExpenses('all', event)" style="padding: 8px 16px; border: 2px solid #2563eb; background: #2563eb; color: white; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
                             <span data-i18n="exp_filter_all">All</span>
                         </button>
                     </div>
@@ -1903,6 +1893,10 @@
                 payment: "Payment",
                 today_summary: "📊 Today's Summary",
                 total_all_summary: "📈 Total ALL Sessions",
+                live_submission_finance: "💼 Submission Finance",
+                total_billed: "Total Billed",
+                total_paid: "Total Paid",
+                remaining_simple: "Remaining",
                 total_time: "Total Time",
                 total_payment: "Total Payment",
                 manual_entry_title: "📝 Manual Time Entry",
@@ -2068,6 +2062,10 @@
                 duration: "المدة",
                 payment: "المبلغ",
                 today_summary: "📊 ملخص اليوم",
+                live_submission_finance: "💼 ملخص الحسابات",
+                total_billed: "المجموع الكلي",
+                total_paid: "المقبوض",
+                remaining_simple: "المتبقي",
                 total_time: "الوقت الإجمالي",
                 total_payment: "المبلغ الإجمالي",
                 manual_entry_title: "إدخال الوقت يدوياً",
@@ -2282,6 +2280,20 @@
                     }
                 }, 100);
             }
+
+            const liveClientInput = document.getElementById('client-name');
+            if (liveClientInput) {
+                liveClientInput.addEventListener('input', () => applyClientAutoFill('live'));
+                liveClientInput.addEventListener('change', () => applyClientAutoFill('live'));
+                liveClientInput.addEventListener('blur', () => applyClientAutoFill('live'));
+            }
+
+            const manualClientInput = document.getElementById('manual-client-name');
+            if (manualClientInput) {
+                manualClientInput.addEventListener('input', () => applyClientAutoFill('manual'));
+                manualClientInput.addEventListener('change', () => applyClientAutoFill('manual'));
+                manualClientInput.addEventListener('blur', () => applyClientAutoFill('manual'));
+            }
         });
 
         // ========================================
@@ -2294,6 +2306,10 @@
         let isPaused = false;
         let currentJob = null;
         let reminderInterval = null;
+        const clientAutoFillState = {
+            live: { matchedClient: '', jobSite: '', rate: '' },
+            manual: { matchedClient: '', jobSite: '', rate: '' }
+        };
 
         // Date formatting helper - DD/MM/YYYY format
         function formatDate(dateInput) {
@@ -2334,6 +2350,137 @@
             localStorage.setItem('excavatorTimer', JSON.stringify(data));
             if (data && data.workerName && data.workerName.trim()) {
                 localStorage.setItem('workerName', data.workerName.trim());
+            }
+        }
+
+        function normalizeClientName(name) {
+            return String(name || '')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, ' ');
+        }
+
+        function getLatestClientMemory(clientName) {
+            const normalizedClient = normalizeClientName(clientName);
+            if (!normalizedClient) return null;
+
+            const data = loadData();
+            const history = Array.isArray(data.history) ? data.history : [];
+            const buildLatestFromHistory = (matchFn) => {
+                let latestMatch = null;
+                let latestTimestamp = -1;
+
+                history.forEach(session => {
+                    const sessionClient = normalizeClientName(session.clientName || session.job);
+                    if (!matchFn(sessionClient)) return;
+
+                    const parsedRate = parseFloat(session.rate);
+                    const jobSite = String(session.jobSite || session.job || '').trim();
+                    const effectiveTimestamp = new Date(session.endTime || session.startTime || 0).getTime() || Number(session.timestamp || 0);
+
+                    if (!jobSite || !Number.isFinite(parsedRate) || parsedRate <= 0) return;
+                    if (effectiveTimestamp < latestTimestamp) return;
+
+                    latestTimestamp = effectiveTimestamp;
+                    latestMatch = {
+                    matchedClient: sessionClient,
+                        jobSite: jobSite,
+                        rate: parsedRate
+                    };
+                });
+
+                return latestMatch;
+            };
+
+            // 1) Prefer exact match first.
+            const exactMatch = buildLatestFromHistory(sessionClient => sessionClient === normalizedClient);
+            if (exactMatch) return exactMatch;
+
+            // 2) Allow partial lookup after at least 3 characters (typing-friendly).
+            if (normalizedClient.length >= 3) {
+                const partialMatch = buildLatestFromHistory(sessionClient => sessionClient.includes(normalizedClient));
+                if (partialMatch) return partialMatch;
+            }
+
+            // Fallback for legacy users who may still have jobs[] but no history match yet.
+            const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+            for (let i = jobs.length - 1; i >= 0; i--) {
+                const job = jobs[i];
+                const jobClient = normalizeClientName(job.clientName || job.name);
+                const isExact = jobClient === normalizedClient;
+                const isPartial = normalizedClient.length >= 3 && jobClient.includes(normalizedClient);
+                if (!isExact && !isPartial) continue;
+                const parsedRate = parseFloat(job.rate);
+                const jobSite = String(job.jobSite || job.name || '').trim();
+                if (!jobSite || !Number.isFinite(parsedRate) || parsedRate <= 0) continue;
+                return {
+                    matchedClient: jobClient,
+                    jobSite: jobSite,
+                    rate: parsedRate
+                };
+            }
+
+            return null;
+        }
+
+        function clearAutoFilledFields(mode, jobSiteInput, rateInput) {
+            const state = clientAutoFillState[mode];
+            if (!state) return;
+
+            if (state.jobSite && jobSiteInput.value.trim() === state.jobSite) {
+                jobSiteInput.value = '';
+            }
+            if (state.rate && rateInput.value.trim() === state.rate) {
+                rateInput.value = '';
+            }
+
+            state.matchedClient = '';
+            state.jobSite = '';
+            state.rate = '';
+        }
+
+        function applyClientAutoFill(mode) {
+            const isManual = mode === 'manual';
+            const clientInput = document.getElementById(isManual ? 'manual-client-name' : 'client-name');
+            const jobSiteInput = document.getElementById(isManual ? 'manual-job-site' : 'job-site');
+            const rateInput = document.getElementById(isManual ? 'manual-hourly-rate' : 'hourly-rate');
+            const state = clientAutoFillState[mode];
+
+            if (!clientInput || !jobSiteInput || !rateInput || !state) return;
+
+            const clientName = clientInput.value.trim();
+            if (!clientName) {
+                clearAutoFilledFields(mode, jobSiteInput, rateInput);
+                return;
+            }
+
+            const memory = getLatestClientMemory(clientName);
+            if (!memory) {
+                clearAutoFilledFields(mode, jobSiteInput, rateInput);
+                return;
+            }
+
+            let didFill = false;
+            const canFillJobSite = !jobSiteInput.value.trim() || (state.jobSite && jobSiteInput.value.trim() === state.jobSite);
+            if (canFillJobSite && memory.jobSite) {
+                jobSiteInput.value = memory.jobSite;
+                didFill = true;
+            }
+
+            const memoryRateText = String(memory.rate);
+            const canFillRate = !rateInput.value.trim() || (state.rate && rateInput.value.trim() === state.rate);
+            if (canFillRate && Number.isFinite(memory.rate) && memory.rate > 0) {
+                rateInput.value = memoryRateText;
+                didFill = true;
+            }
+
+            state.matchedClient = memory.matchedClient || '';
+            state.jobSite = memory.jobSite || '';
+            state.rate = memoryRateText;
+
+            // In manual tab, refresh calculation preview only when it is already active.
+            if (didFill && isManual && manualCalculation) {
+                calculateManual();
             }
         }
 
@@ -2478,8 +2625,10 @@
             const todaySessions = data.history.filter(h => new Date(h.endTime).toDateString() === today);
             const totalSeconds = todaySessions.reduce((sum, h) => sum + h.duration, 0);
             const totalPayment = todaySessions.reduce((sum, h) => sum + parseFloat(h.payment), 0);
-            document.getElementById('today-hours').textContent = formatHM(totalSeconds);
-            document.getElementById('today-payment').textContent = totalPayment.toFixed(2) + ' MAD';
+            const todayHoursEl = document.getElementById('today-hours');
+            const todayPaymentEl = document.getElementById('today-payment');
+            if (todayHoursEl) todayHoursEl.textContent = formatHM(totalSeconds);
+            if (todayPaymentEl) todayPaymentEl.textContent = totalPayment.toFixed(2) + ' MAD';
         }
 
         function updateTotalSummary() {
@@ -2488,8 +2637,10 @@
             const allSessions = data.history;
             const totalSeconds = allSessions.reduce((sum, h) => sum + h.duration, 0);
             const totalPayment = allSessions.reduce((sum, h) => sum + parseFloat(h.payment), 0);
-            document.getElementById('total-hours').textContent = formatHM(totalSeconds);
-            document.getElementById('total-payment').textContent = totalPayment.toFixed(2) + ' MAD';
+            const totalHoursEl = document.getElementById('total-hours');
+            const totalPaymentEl = document.getElementById('total-payment');
+            if (totalHoursEl) totalHoursEl.textContent = formatHM(totalSeconds);
+            if (totalPaymentEl) totalPaymentEl.textContent = totalPayment.toFixed(2) + ' MAD';
         }
 
         function renderSavedJobs() {
@@ -3074,6 +3225,12 @@
             if (billedEl) billedEl.textContent = grandBilled.toFixed(2) + ' MAD';
             if (paidEl) paidEl.textContent = grandPaid.toFixed(2) + ' MAD';
             if (remEl) remEl.textContent = grandRemaining.toFixed(2) + ' MAD';
+            const liveBilledEl = document.getElementById('live-submissions-total-billed');
+            const livePaidEl = document.getElementById('live-submissions-total-paid');
+            const liveRemainingEl = document.getElementById('live-submissions-total-remaining');
+            if (liveBilledEl) liveBilledEl.textContent = grandBilled.toFixed(2) + ' MAD';
+            if (livePaidEl) livePaidEl.textContent = grandPaid.toFixed(2) + ' MAD';
+            if (liveRemainingEl) liveRemainingEl.textContent = grandRemaining.toFixed(2) + ' MAD';
 
             // Categorize submissions
             const activeSubmissions = submissions.filter(s => s.paymentStatus !== 'fully_paid');
@@ -4405,7 +4562,7 @@
         // 💰 EXPENSES SYSTEM
         // ========================================
         
-        let currentExpenseFilter = 'today';
+        let currentExpenseFilter = 'all';
         let currentExpenseTypeFilter = 'all';
         let currentExpenseStatusFilter = 'all';
         let currentExpenseSearch = '';
