@@ -11,55 +11,125 @@
     <link rel="manifest" href="manifest.json">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-app: #14141f;
+            --bg-app-2: #1a1a2e;
+            --card-bg: #21212f;
+            --card-bg-2: #1b1b28;
+            --card-border: rgba(255,255,255,0.07);
+            --amber: #f59e0b;
+            --amber-dark: #d97706;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --green: #22c55e;
+            --red: #ef4444;
+            --blue: #3b82f6;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(160deg, #1a1a2e 0%, #14141f 60%);
+            background-attachment: fixed;
             min-height: 100vh;
             padding: 20px;
+            padding-bottom: 110px;
+            color: var(--text-main);
             transition: direction 0.3s ease;
         }
         body[dir="rtl"] {
             font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
         }
         .container { max-width: 600px; margin: 0 auto; }
-        .header { text-align: center; color: white; margin-bottom: 30px; }
-        .header h1 { font-size: 28px; margin-bottom: 5px; }
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            text-align: left;
+            color: white;
+            margin-bottom: 22px;
         }
-        .timer-display { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 22px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .header p { display: none; }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        }
+        .timer-display { text-align: center; margin-bottom: 20px; display: flex; justify-content: center; }
+        .timer-ring { position: relative; width: 240px; height: 240px; max-width: 70vw; max-height: 70vw; }
+        .timer-ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .timer-ring-track { fill: none; stroke: rgba(255,255,255,0.07); stroke-width: 9; }
+        .timer-ring-progress {
+            fill: none;
+            stroke: var(--amber);
+            stroke-width: 9;
+            stroke-linecap: round;
+            stroke-dasharray: 553;
+            stroke-dashoffset: 553;
+            transition: stroke-dashoffset 0.5s linear;
+            filter: drop-shadow(0 0 6px rgba(245,158,11,0.45));
+        }
+        .timer-ring-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .timer-ring-label {
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            color: var(--amber);
+            font-weight: 700;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .timer-ring-label svg { width: 16px; height: 16px; }
         .timer-display .time {
-            font-size: 64px;
+            font-size: 44px;
             font-weight: bold;
-            color: #2563eb;
+            color: var(--amber);
             font-variant-numeric: tabular-nums;
         }
         .payment-display {
             text-align: center;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 25px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 16px;
+            border-radius: 14px;
+            margin-bottom: 22px;
+            box-shadow: 0 6px 18px rgba(16,185,129,0.3);
+        }
+        .payment-label {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            color: rgba(255,255,255,0.85);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }
         .payment-display .amount {
-            font-size: 48px;
+            font-size: 36px;
             font-weight: bold;
             color: white;
         }
         .job-info {
-            background: #f8fafc;
+            background: var(--card-bg-2);
+            border: 1px solid var(--card-border);
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-bottom: 20px;
         }
         .job-info .job-name {
             font-size: 18px;
             font-weight: 600;
-            color: #1e293b;
+            color: var(--text-main);
             margin-bottom: 8px;
         }
         .btn {
@@ -92,41 +162,69 @@
             display: block;
             font-weight: 600;
             margin-bottom: 8px;
-            color: #475569;
+            color: var(--text-muted);
         }
         .input-group input {
             width: 100%;
             padding: 15px;
-            border: 2px solid #e2e8f0;
+            border: 2px solid rgba(255,255,255,0.08);
             border-radius: 10px;
             font-size: 16px;
+            background: var(--card-bg-2);
+            color: var(--text-main);
+        }
+        .input-group input::placeholder { color: #5b6473; }
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--amber);
         }
         .tabs {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 600px;
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 2px;
+            margin: 0;
+            background: rgba(20, 20, 31, 0.92);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-top: 1px solid var(--card-border);
+            padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+            z-index: 900;
         }
         .tab {
             flex: 1;
-            padding: 15px;
-            background: rgba(255,255,255,0.2);
+            padding: 6px 2px;
+            background: transparent;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-weight: 600;
+            font-size: 10.5px;
             cursor: pointer;
-            color: white;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s, background 0.2s;
         }
+        .tab svg { width: 22px; height: 22px; stroke-width: 2; }
+        .tab > * { pointer-events: none; }
         .tab.active {
-            background: white;
-            color: #2563eb;
+            background: rgba(245, 158, 11, 0.12);
+            color: var(--amber);
         }
         .view { display: none; }
         .view.active { display: block; }
         .today-summary {
-            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
             padding: 20px;
             border-radius: 15px;
-            color: white;
+            color: var(--text-main);
         }
         .summary-grid {
             display: grid;
@@ -141,7 +239,8 @@
         }
         .saved-job-item {
             padding: 12px;
-            background: #f8fafc;
+            background: var(--card-bg-2);
+            border: 1px solid var(--card-border);
             border-radius: 8px;
             margin-bottom: 8px;
             cursor: pointer;
@@ -151,26 +250,27 @@
             transition: all 0.3s;
         }
         .saved-job-item:hover {
-            background: #e2e8f0;
+            background: #2a2a3d;
         }
         .saved-job-item.selected {
-            background: #dbeafe;
-            border: 2px solid #2563eb;
+            background: rgba(245,158,11,0.12);
+            border: 2px solid var(--amber);
         }
         .history-item {
-            background: #f8fafc;
+            background: var(--card-bg-2);
+            border: 1px solid var(--card-border);
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 10px;
-            border-left: 4px solid #2563eb;
+            border-left: 4px solid var(--amber);
             position: relative;
         }
         .delete-history-btn {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: #fee2e2;
-            color: #dc2626;
+            background: rgba(239,68,68,0.15);
+            color: #f87171;
             border: none;
             padding: 6px 12px;
             border-radius: 6px;
@@ -180,11 +280,11 @@
             transition: all 0.3s;
         }
         .delete-history-btn:hover {
-            background: #fca5a5;
+            background: rgba(239,68,68,0.30);
         }
         @media (max-width: 480px) {
-            .timer-display .time { font-size: 48px; }
-            .payment-display .amount { font-size: 36px; }
+            .timer-display .time { font-size: 38px; }
+            .payment-display .amount { font-size: 32px; }
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -203,11 +303,26 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('timer')" data-i18n="tab_timer">Live Timer</button>
-            <button class="tab" onclick="switchTab('manual')" data-i18n="tab_manual">Manual Entry</button>
-            <button class="tab" onclick="switchTab('history')" data-i18n="tab_history">History</button>
-            <button class="tab" onclick="switchTab('expenses')" data-i18n="tab_expenses">💰 Expenses</button>
-            <button class="tab" onclick="switchTab('settings')" data-i18n="tab_settings">Settings</button>
+            <button class="tab active" onclick="switchTab('timer')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>
+                <span data-i18n="tab_timer">Live Timer</span>
+            </button>
+            <button class="tab" onclick="switchTab('manual')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                <span data-i18n="tab_manual">Manual Entry</span>
+            </button>
+            <button class="tab" onclick="switchTab('history')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+                <span data-i18n="tab_history">History</span>
+            </button>
+            <button class="tab" onclick="switchTab('expenses')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2"/><path d="M12 16v2"/></svg>
+                <span data-i18n="tab_expenses">Expenses</span>
+            </button>
+            <button class="tab" onclick="switchTab('settings')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span data-i18n="tab_settings">Settings</span>
+            </button>
         </div>
 
         <div id="timer-view" class="view active">
@@ -231,14 +346,27 @@
 
                 <div id="timer-section" style="display: none;">
                     <div class="job-info">
-                        <div style="font-size: 14px; color: #64748b; margin-bottom: 5px;">📍 <span id="current-job-site">-</span></div>
+                        <div style="font-size: 14px; color: #94a3b8; margin-bottom: 5px;">📍 <span id="current-job-site">-</span></div>
                         <div class="job-name">👤 <span id="current-client-name">-</span></div>
-                        <div style="color: #64748b; margin-top: 5px;">Rate: <strong id="current-rate" style="color: #2563eb;">0</strong> MAD/hour</div>
+                        <div style="color: #94a3b8; margin-top: 5px;">Rate: <strong id="current-rate" style="color: #f59e0b;">0</strong> MAD/hour</div>
                     </div>
                     <div class="timer-display">
-                        <div class="time" id="timer">00:00:00</div>
+                        <div class="timer-ring">
+                            <svg class="timer-ring-svg" viewBox="0 0 200 200">
+                                <circle class="timer-ring-track" cx="100" cy="100" r="88"/>
+                                <circle class="timer-ring-progress" id="timer-ring-progress" cx="100" cy="100" r="88"/>
+                            </svg>
+                            <div class="timer-ring-center">
+                                <div class="timer-ring-label">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>
+                                    <span data-i18n="tab_timer">Live Timer</span>
+                                </div>
+                                <div class="time" id="timer">00:00:00</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="payment-display">
+                        <div class="payment-label" data-i18n="earnings">Earnings</div>
                         <div class="amount" id="payment">0.00 MAD</div>
                     </div>
                     <button class="btn btn-stop" onclick="stopTimer()" data-i18n="stop_save">Stop & Save</button>
@@ -249,17 +377,17 @@
             <div class="card today-summary">
                 <h3 data-i18n="live_submission_finance">💼 Submission Finance</h3>
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px;">
-                    <div style="background: #eff6ff; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #bfdbfe;">
-                        <div style="font-size: 11px; color: #1e40af; font-weight: 600;" data-i18n="total_billed">Total Billed</div>
-                        <div id="live-submissions-total-billed" style="font-size: 20px; font-weight: bold; color: #2563eb;">0 MAD</div>
+                    <div style="background: rgba(59,130,246,0.10); border-radius: 10px; padding: 12px; text-align: center; border: 1px solid rgba(59,130,246,0.30);">
+                        <div style="font-size: 11px; color: #60a5fa; font-weight: 600;" data-i18n="total_billed">Total Billed</div>
+                        <div id="live-submissions-total-billed" style="font-size: 20px; font-weight: bold; color: #60a5fa;">0 MAD</div>
                     </div>
-                    <div style="background: #f0fdf4; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #bbf7d0;">
-                        <div style="font-size: 11px; color: #166534; font-weight: 600;" data-i18n="total_paid">Total Paid</div>
-                        <div id="live-submissions-total-paid" style="font-size: 20px; font-weight: bold; color: #22c55e;">0 MAD</div>
+                    <div style="background: rgba(34,197,94,0.10); border-radius: 10px; padding: 12px; text-align: center; border: 1px solid rgba(34,197,94,0.30);">
+                        <div style="font-size: 11px; color: #4ade80; font-weight: 600;" data-i18n="total_paid">Total Paid</div>
+                        <div id="live-submissions-total-paid" style="font-size: 20px; font-weight: bold; color: #4ade80;">0 MAD</div>
                     </div>
-                    <div style="background: #fef2f2; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #fecaca;">
-                        <div style="font-size: 11px; color: #991b1b; font-weight: 600;" data-i18n="remaining_simple">Remaining</div>
-                        <div id="live-submissions-total-remaining" style="font-size: 20px; font-weight: bold; color: #ef4444;">0 MAD</div>
+                    <div style="background: rgba(239,68,68,0.10); border-radius: 10px; padding: 12px; text-align: center; border: 1px solid rgba(239,68,68,0.30);">
+                        <div style="font-size: 11px; color: #f87171; font-weight: 600;" data-i18n="remaining_simple">Remaining</div>
+                        <div id="live-submissions-total-remaining" style="font-size: 20px; font-weight: bold; color: #f87171;">0 MAD</div>
                     </div>
                 </div>
             </div>
@@ -268,14 +396,14 @@
         <div id="manual-view" class="view">
             <div class="card">
                 <h2 style="margin-bottom: 20px;" data-i18n="manual_entry_title">📝 Manual Time Entry</h2>
-                <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;" data-i18n="manual_entry_desc">Enter start and stop times to calculate work duration and payment</p>
+                <p style="color: #94a3b8; margin-bottom: 20px; font-size: 14px;" data-i18n="manual_entry_desc">Enter start and stop times to calculate work duration and payment</p>
                 
                 <!-- Toggle buttons for entry method -->
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button id="manual-method-time-range" onclick="switchManualMethod('time-range')" style="flex: 1; padding: 12px; border: 2px solid #2563eb; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #2563eb; color: white;">
+                    <button id="manual-method-time-range" onclick="switchManualMethod('time-range')" style="flex: 1; padding: 12px; border: 2px solid #f59e0b; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #f59e0b; color: #14141f;">
                         🕐 <span data-i18n="time_range_entry">Time Range</span>
                     </button>
-                    <button id="manual-method-duration" onclick="switchManualMethod('duration')" style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: white; color: #64748b;">
+                    <button id="manual-method-duration" onclick="switchManualMethod('duration')" style="flex: 1; padding: 12px; border: 2px solid rgba(255,255,255,0.08); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #94a3b8;">
                         ⏱️ <span data-i18n="duration_entry">Duration Entry</span>
                     </button>
                 </div>
@@ -293,7 +421,7 @@
 
                 <div class="input-group">
                     <label>📅 <span data-i18n="work_date">Work Date</span></label>
-                    <input type="date" id="manual-work-date" style="padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; width: 100%;">
+                    <input type="date" id="manual-work-date" style="padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; width: 100%; background: #1b1b28; color: #f1f5f9;">
                 </div>
 
                 <div class="input-group">
@@ -307,7 +435,7 @@
                         <label data-i18n="start_time">Start Time (24-hour format: HH:MM)</label>
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="text" id="manual-start-time" placeholder="08:30" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" style="flex: 1;">
-                            <select id="manual-start-period" style="display: none; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; background: white; cursor: pointer;">
+                            <select id="manual-start-period" style="display: none; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9; cursor: pointer;">
                                 <option value="AM" data-i18n="morning">Morning (AM)</option>
                                 <option value="PM" data-i18n="evening">Evening (PM)</option>
                             </select>
@@ -318,7 +446,7 @@
                         <label data-i18n="stop_time">Stop Time (24-hour format: HH:MM)</label>
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="text" id="manual-stop-time" placeholder="17:00" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" style="flex: 1;">
-                            <select id="manual-stop-period" style="display: none; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; background: white; cursor: pointer;">
+                            <select id="manual-stop-period" style="display: none; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9; cursor: pointer;">
                                 <option value="AM" data-i18n="morning">Morning (AM)</option>
                                 <option value="PM" data-i18n="evening">Evening (PM)</option>
                             </select>
@@ -339,16 +467,16 @@
                     </div>
                 </div>
 
-                <div id="manual-result" style="display: none; background: #f0fdf4; border: 2px solid #22c55e; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div id="manual-result" style="display: none; background: rgba(34,197,94,0.10); border: 2px solid rgba(34,197,94,0.35); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
                     <div style="text-align: center;">
-                        <div style="font-size: 14px; color: #166534; margin-bottom: 10px;" data-i18n="duration_payment">Duration & Payment</div>
-                        <div style="font-size: 32px; font-weight: bold; color: #15803d;" id="manual-duration">0h 0m</div>
-                        <div style="font-size: 36px; font-weight: bold; color: #15803d; margin-top: 10px;" id="manual-payment">0.00 MAD</div>
+                        <div style="font-size: 14px; color: #4ade80; margin-bottom: 10px;" data-i18n="duration_payment">Duration & Payment</div>
+                        <div style="font-size: 32px; font-weight: bold; color: #4ade80;" id="manual-duration">0h 0m</div>
+                        <div style="font-size: 36px; font-weight: bold; color: #4ade80; margin-top: 10px;" id="manual-payment">0.00 MAD</div>
                     </div>
                 </div>
 
                 <button class="btn btn-start" onclick="calculateManual()" data-i18n="calculate">Calculate</button>
-                <button class="btn" style="background: #e2e8f0; color: #475569; margin-top: 10px;" onclick="saveManual()" data-i18n="save_history">Save to History</button>
+                <button class="btn" style="background: #2a2a3d; color: #cbd5e1; margin-top: 10px;" onclick="saveManual()" data-i18n="save_history">Save to History</button>
             </div>
         </div>
 
@@ -371,29 +499,29 @@
                 <div class="input-group">
                     <label data-i18n="your_name">Your Name</label>
                     <input type="text" id="worker-name" placeholder="Enter your name">
-                    <p style="font-size: 12px; color: #64748b; margin-top: 5px;" data-i18n="name_appears">This name will appear in admin reports</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;" data-i18n="name_appears">This name will appear in admin reports</p>
                 </div>
 
                 <button class="btn btn-start" onclick="saveWorkerName()" data-i18n="save_name">Save Name</button>
 
-                <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 10px; border: 2px solid #cbd5e1;">
-                    <h3 style="color: #475569; margin-bottom: 15px;">🕐 <span data-i18n="time_format">Time Format</span></h3>
+                <div style="margin-top: 30px; padding: 20px; background: var(--card-bg-2); border-radius: 10px; border: 1px solid var(--card-border);">
+                    <h3 style="color: #f1f5f9; margin-bottom: 15px;">🕐 <span data-i18n="time_format">Time Format</span></h3>
                     <div style="display: flex; gap: 10px;">
-                        <button id="time-format-24h" onclick="setTimeFormat('24h')" style="flex: 1; padding: 12px; border: 2px solid #2563eb; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #2563eb; color: white;">
+                        <button id="time-format-24h" onclick="setTimeFormat('24h')" style="flex: 1; padding: 12px; border: 2px solid #f59e0b; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #f59e0b; color: #14141f;">
                             <span data-i18n="time_format_24h">24-hour (14:30)</span>
                         </button>
-                        <button id="time-format-12h" onclick="setTimeFormat('12h')" style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: white; color: #64748b;">
+                        <button id="time-format-12h" onclick="setTimeFormat('12h')" style="flex: 1; padding: 12px; border: 2px solid rgba(255,255,255,0.08); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #94a3b8;">
                             <span data-i18n="time_format_12h">12-hour (2:30 PM)</span>
                         </button>
                     </div>
                 </div>
 
-                <div style="margin-top: 30px; padding: 20px; background: #f0fdf4; border-radius: 10px; border: 2px solid #22c55e;">
-                    <h3 style="color: #166534; margin-bottom: 10px;" data-i18n="submit_sessions">📤 Submit Work Sessions</h3>
-                    <p style="font-size: 14px; color: #166534; margin-bottom: 15px;" data-i18n="send_unsent">Send unsent work sessions to admin</p>
+                <div style="margin-top: 30px; padding: 20px; background: rgba(34,197,94,0.08); border-radius: 10px; border: 1px solid rgba(34,197,94,0.30);">
+                    <h3 style="color: #4ade80; margin-bottom: 10px;" data-i18n="submit_sessions">📤 Submit Work Sessions</h3>
+                    <p style="font-size: 14px; color: #86efac; margin-bottom: 15px;" data-i18n="send_unsent">Send unsent work sessions to admin</p>
                     <div style="margin-bottom: 15px;">
-                        <strong style="color: #166534;" data-i18n="unsent_sessions">Unsent Sessions:</strong>
-                        <div style="margin-top: 10px; padding: 10px; background: white; border-radius: 8px;">
+                        <strong style="color: #4ade80;" data-i18n="unsent_sessions">Unsent Sessions:</strong>
+                        <div style="margin-top: 10px; padding: 10px; background: #14141f; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
                             <div id="submit-summary"></div>
                         </div>
                     </div>
@@ -402,16 +530,16 @@
 
                 <div id="submission-history" style="margin-top: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="color: #1e293b; margin: 0;" data-i18n="submission_history">📋 Submission History</h3>
-                        <div style="font-size: 12px; color: #64748b; font-style: italic;">ℹ️ Admin can delete completed submissions</div>
+                        <h3 style="color: #f1f5f9; margin: 0;" data-i18n="submission_history">📋 Submission History</h3>
+                        <div style="font-size: 12px; color: #94a3b8; font-style: italic;">ℹ️ Admin can delete completed submissions</div>
                     </div>
                     
                     <!-- Toggle Tabs: Active vs Completed -->
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <button id="submission-tab-active" onclick="switchSubmissionTab('active')" style="flex: 1; padding: 12px; border: 2px solid #2563eb; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #2563eb; color: white;">
+                        <button id="submission-tab-active" onclick="switchSubmissionTab('active')" style="flex: 1; padding: 12px; border: 2px solid #f59e0b; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #f59e0b; color: #14141f;">
                             📊 <span data-i18n="active_submissions">Active</span> (<span id="active-count">0</span>)
                         </button>
-                        <button id="submission-tab-completed" onclick="switchSubmissionTab('completed')" style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: white; color: #64748b;">
+                        <button id="submission-tab-completed" onclick="switchSubmissionTab('completed')" style="flex: 1; padding: 12px; border: 2px solid rgba(255,255,255,0.08); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #94a3b8;">
                             ✅ <span data-i18n="completed_submissions">Completed</span> (<span id="completed-count">0</span>)
                         </button>
                     </div>
@@ -423,23 +551,23 @@
                             type="text"
                             oninput="onSubmissionSearchInput(event)"
                             placeholder="Search by client name, work date, submitted date, or job site..."
-                            style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 13px;"
+                            style="width: 100%; padding: 10px 12px; border: 2px solid rgba(255,255,255,0.08); border-radius: 8px; font-size: 13px; background: #1b1b28; color: #f1f5f9;"
                         >
                     </div>
 
                     <!-- Financial Summary Banner -->
                     <div id="submission-financial-summary" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
-                        <div style="background: #eff6ff; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #bfdbfe;">
-                            <div style="font-size: 11px; color: #1e40af; font-weight: 600;">Total Billed</div>
-                            <div id="submissions-total-billed" style="font-size: 18px; font-weight: bold; color: #2563eb;">0 MAD</div>
+                        <div style="background: rgba(59,130,246,0.10); border-radius: 10px; padding: 12px; text-align: center; border: 1px solid rgba(59,130,246,0.30);">
+                            <div style="font-size: 11px; color: #60a5fa; font-weight: 600;">Total Billed</div>
+                            <div id="submissions-total-billed" style="font-size: 18px; font-weight: bold; color: #60a5fa;">0 MAD</div>
                         </div>
-                        <div style="background: #f0fdf4; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #bbf7d0;">
-                            <div style="font-size: 11px; color: #166534; font-weight: 600;">Total Paid</div>
-                            <div id="submissions-total-paid" style="font-size: 18px; font-weight: bold; color: #22c55e;">0 MAD</div>
+                        <div style="background: rgba(34,197,94,0.10); border-radius: 10px; padding: 12px; text-align: center; border: 1px solid rgba(34,197,94,0.30);">
+                            <div style="font-size: 11px; color: #4ade80; font-weight: 600;">Total Paid</div>
+                            <div id="submissions-total-paid" style="font-size: 18px; font-weight: bold; color: #4ade80;">0 MAD</div>
                         </div>
-                        <div style="background: #fef2f2; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #fecaca;">
-                            <div style="font-size: 11px; color: #991b1b; font-weight: 600;">Remaining</div>
-                            <div id="submissions-total-remaining" style="font-size: 18px; font-weight: bold; color: #ef4444;">0 MAD</div>
+                        <div style="background: rgba(239,68,68,0.10); border-radius: 10px; padding: 12px; text-align: center; border: 1px solid rgba(239,68,68,0.30);">
+                            <div style="font-size: 11px; color: #f87171; font-weight: 600;">Remaining</div>
+                            <div id="submissions-total-remaining" style="font-size: 18px; font-weight: bold; color: #f87171;">0 MAD</div>
                         </div>
                     </div>
                     
@@ -450,56 +578,56 @@
 
         <div id="expenses-view" class="view">
             <!-- Summary Cards -->
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
-                <div style="background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 5px;" data-i18n="exp_today">Today</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #dc2626;" id="expenses-today">0 MAD</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 22px;">
+                <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 8px; text-align: center;">
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;" data-i18n="exp_today">Today</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #f87171; line-height: 1.2;" id="expenses-today">0 MAD</div>
                 </div>
-                <div style="background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 5px;" data-i18n="exp_week">This Week</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #dc2626;" id="expenses-week">0 MAD</div>
+                <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 8px; text-align: center;">
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;" data-i18n="exp_week">This Week</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #f87171; line-height: 1.2;" id="expenses-week">0 MAD</div>
                 </div>
-                <div style="background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 5px;" data-i18n="exp_month">This Month</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #dc2626;" id="expenses-month">0 MAD</div>
+                <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 8px; text-align: center;">
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;" data-i18n="exp_month">This Month</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #f87171; line-height: 1.2;" id="expenses-month">0 MAD</div>
                 </div>
-                <div style="background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 5px;">All Time</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #dc2626;" id="expenses-all-time">0 MAD</div>
+                <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 8px; text-align: center;">
+                    <div style="font-size: 9px; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">All Time</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #f87171; line-height: 1.2;" id="expenses-all-time">0 MAD</div>
                 </div>
             </div>
 
-            <div class="card">
-                <h2 style="margin-bottom: 20px;" data-i18n="exp_add_new">💰 Add New Expense</h2>
+            <div>
+                <h2 style="margin-bottom: 14px; font-size: 13px; color: #f59e0b; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;" data-i18n="exp_add_new">💰 Add New Expense</h2>
                 
                 <!-- Expense Type Buttons -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px;">
-                    <button onclick="openExpenseModal('repair')" style="padding: 20px; border: 2px solid #ef4444; background: white; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                        <div style="font-size: 28px; margin-bottom: 5px;">🔧</div>
-                        <div style="font-size: 13px; font-weight: 600; color: #1e293b;" data-i18n="exp_repair">Repair</div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 25px;">
+                    <button onclick="openExpenseModal('repair')" style="display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: 2px solid #ef4444; background: var(--card-bg-2); border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                        <span style="font-size: 22px; pointer-events: none;">🔧</span>
+                        <span style="font-size: 14px; font-weight: 700; color: #ef4444; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none;" data-i18n="exp_repair">Repair</span>
                     </button>
-                    <button onclick="openExpenseModal('fuel')" style="padding: 20px; border: 2px solid #f59e0b; background: white; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                        <div style="font-size: 28px; margin-bottom: 5px;">⛽</div>
-                        <div style="font-size: 13px; font-weight: 600; color: #1e293b;" data-i18n="exp_fuel">Fuel</div>
+                    <button onclick="openExpenseModal('fuel')" style="display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: 2px solid #f59e0b; background: var(--card-bg-2); border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                        <span style="font-size: 22px; pointer-events: none;">⛽</span>
+                        <span style="font-size: 14px; font-weight: 700; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none;" data-i18n="exp_fuel">Fuel</span>
                     </button>
-                    <button onclick="openExpenseModal('parts')" style="padding: 20px; border: 2px solid #8b5cf6; background: white; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                        <div style="font-size: 28px; margin-bottom: 5px;">⚙️</div>
-                        <div style="font-size: 13px; font-weight: 600; color: #1e293b;" data-i18n="exp_parts">Parts</div>
+                    <button onclick="openExpenseModal('parts')" style="display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: 2px solid #8b5cf6; background: var(--card-bg-2); border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                        <span style="font-size: 22px; pointer-events: none;">⚙️</span>
+                        <span style="font-size: 14px; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none;" data-i18n="exp_parts">Parts</span>
                     </button>
-                    <button onclick="openExpenseModal('driver')" style="padding: 20px; border: 2px solid #06b6d4; background: white; border-radius: 12px; cursor: pointer; transition: all 0.3s;">
-                        <div style="font-size: 28px; margin-bottom: 5px;">🚚</div>
-                        <div style="font-size: 13px; font-weight: 600; color: #1e293b;" data-i18n="exp_driver">Driver</div>
+                    <button onclick="openExpenseModal('driver')" style="display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: 2px solid #06b6d4; background: var(--card-bg-2); border-radius: 12px; cursor: pointer; transition: all 0.3s;">
+                        <span style="font-size: 22px; pointer-events: none;">🚚</span>
+                        <span style="font-size: 14px; font-weight: 700; color: #22d3ee; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none;" data-i18n="exp_driver">Driver</span>
                     </button>
                 </div>
 
                 <!-- Unsent Expenses Section -->
-                <div style="background: #fef3c7; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.30); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 style="color: #92400e; margin: 0;" data-i18n="exp_unsent">📝 Unsent Expenses</h3>
-                        <span id="unsent-count-badge" style="background: #fbbf24; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">0</span>
+                        <h3 style="color: #f59e0b; margin: 0;" data-i18n="exp_unsent">📝 Unsent Expenses</h3>
+                        <span id="unsent-count-badge" style="background: #f59e0b; color: #14141f; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">0</span>
                     </div>
                     <div id="unsent-expenses-list">
-                        <p style="text-align: center; color: #92400e; font-size: 13px;" data-i18n="exp_no_unsent">No unsent expenses</p>
+                        <p style="text-align: center; color: #94a3b8; font-size: 13px;" data-i18n="exp_no_unsent">No unsent expenses</p>
                     </div>
                     <button id="submit-expenses-btn" onclick="submitExpenses()" style="width: 100%; padding: 15px; border: none; background: #10b981; color: white; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 15px; display: none;" data-i18n="exp_submit_all">
                         📤 Submit All Expenses
@@ -507,51 +635,51 @@
                 </div>
 
                 <!-- Submitted Expenses History -->
-                <div style="margin-top: 20px;">
-                    <h3 style="color: #1e293b; margin-bottom: 15px;" data-i18n="exp_submitted_history">📋 Submitted Expenses History</h3>
+                <div style="margin-top: 24px;">
+                    <h3 style="color: #f59e0b; margin-bottom: 14px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;" data-i18n="exp_submitted_history">📋 Submitted Expenses History</h3>
                     
                     <!-- Date Filter Tabs -->
                     <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-                        <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('today', event)" style="padding: 8px 16px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('today', event)" style="padding: 8px 16px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
                             <span data-i18n="exp_filter_today">Today</span>
                         </button>
-                        <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('week', event)" style="padding: 8px 16px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('week', event)" style="padding: 8px 16px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
                             <span data-i18n="exp_filter_week">This Week</span>
                         </button>
-                        <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('month', event)" style="padding: 8px 16px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        <button class="expense-date-filter-btn" onclick="filterSubmittedExpenses('month', event)" style="padding: 8px 16px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
                             <span data-i18n="exp_filter_month">This Month</span>
                         </button>
-                        <button class="expense-date-filter-btn active" onclick="filterSubmittedExpenses('all', event)" style="padding: 8px 16px; border: 2px solid #2563eb; background: #2563eb; color: white; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        <button class="expense-date-filter-btn active" onclick="filterSubmittedExpenses('all', event)" style="padding: 8px 16px; border: 2px solid #f59e0b; background: #f59e0b; color: #14141f; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">
                             <span data-i18n="exp_filter_all">All</span>
                         </button>
                     </div>
 
                     <!-- View Mode -->
                     <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                        <button id="expense-view-mode-submission" class="expense-view-mode-btn active" onclick="setSubmittedExpenseViewMode('submission', event)" style="padding: 6px 12px; border: 2px solid #2563eb; background: #2563eb; color: white; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_view_submission">By Submission</button>
-                        <button id="expense-view-mode-type" class="expense-view-mode-btn" onclick="setSubmittedExpenseViewMode('type', event)" style="padding: 6px 12px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_view_type">By Expense Type</button>
+                        <button id="expense-view-mode-submission" class="expense-view-mode-btn active" onclick="setSubmittedExpenseViewMode('submission', event)" style="padding: 6px 12px; border: 2px solid #f59e0b; background: #f59e0b; color: #14141f; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_view_submission">By Submission</button>
+                        <button id="expense-view-mode-type" class="expense-view-mode-btn" onclick="setSubmittedExpenseViewMode('type', event)" style="padding: 6px 12px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_view_type">By Expense Type</button>
                     </div>
 
                     <!-- Type Tabs -->
                     <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                        <button class="expense-type-filter-btn active" onclick="setSubmittedExpenseTypeFilter('all', event)" style="padding: 6px 12px; border: 2px solid #2563eb; background: #2563eb; color: white; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_filter_all">All</button>
-                        <button class="expense-type-filter-btn" onclick="setSubmittedExpenseTypeFilter('repair', event)" style="padding: 6px 12px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_repair">Repair</button>
-                        <button class="expense-type-filter-btn" onclick="setSubmittedExpenseTypeFilter('fuel', event)" style="padding: 6px 12px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_fuel">Fuel</button>
-                        <button class="expense-type-filter-btn" onclick="setSubmittedExpenseTypeFilter('parts', event)" style="padding: 6px 12px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_parts">Parts</button>
-                        <button class="expense-type-filter-btn" onclick="setSubmittedExpenseTypeFilter('driver', event)" style="padding: 6px 12px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_driver">Driver</button>
+                        <button class="expense-type-filter-btn active" onclick="setSubmittedExpenseTypeFilter('all', event)" style="padding: 6px 12px; border: 2px solid #f59e0b; background: #f59e0b; color: #14141f; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_filter_all">All</button>
+                        <button class="expense-type-filter-btn" onclick="setSubmittedExpenseTypeFilter('repair', event)" style="padding: 6px 12px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_repair">Repair</button>
+                        <button class="expense-type-filter-btn" onclick="setSubmittedExpenseTypeFilter('fuel', event)" style="padding: 6px 12px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_fuel">Fuel</button>
+                        <button class="expense-type-filter-btn" onclick="setSubmittedExpenseTypeFilter('parts', event)" style="padding: 6px 12px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_parts">Parts</button>
+                        <button class="expense-type-filter-btn" onclick="setSubmittedExpenseTypeFilter('driver', event)" style="padding: 6px 12px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_driver">Driver</button>
                     </div>
 
                     <!-- Status Chips -->
                     <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                        <button class="expense-status-filter-btn active" onclick="setSubmittedExpenseStatusFilter('all', event)" style="padding: 6px 12px; border: 2px solid #2563eb; background: #2563eb; color: white; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_all_statuses">All Statuses</button>
-                        <button class="expense-status-filter-btn" onclick="setSubmittedExpenseStatusFilter('pending', event)" style="padding: 6px 12px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_pending">Pending</button>
-                        <button class="expense-status-filter-btn" onclick="setSubmittedExpenseStatusFilter('approved', event)" style="padding: 6px 12px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_approved">Approved</button>
-                        <button class="expense-status-filter-btn" onclick="setSubmittedExpenseStatusFilter('rejected', event)" style="padding: 6px 12px; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_rejected">Rejected</button>
+                        <button class="expense-status-filter-btn active" onclick="setSubmittedExpenseStatusFilter('all', event)" style="padding: 6px 12px; border: 2px solid #f59e0b; background: #f59e0b; color: #14141f; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_all_statuses">All Statuses</button>
+                        <button class="expense-status-filter-btn" onclick="setSubmittedExpenseStatusFilter('pending', event)" style="padding: 6px 12px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_pending">Pending</button>
+                        <button class="expense-status-filter-btn" onclick="setSubmittedExpenseStatusFilter('approved', event)" style="padding: 6px 12px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_approved">Approved</button>
+                        <button class="expense-status-filter-btn" onclick="setSubmittedExpenseStatusFilter('rejected', event)" style="padding: 6px 12px; border: 2px solid rgba(255,255,255,0.08); background: #1b1b28; color: #94a3b8; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600;" data-i18n="exp_rejected">Rejected</button>
                     </div>
 
                     <!-- Search -->
                     <div style="margin-bottom: 15px;">
-                        <input id="submitted-expenses-search" type="text" placeholder="Search submitted expenses..." data-i18n-placeholder="exp_search_placeholder" oninput="onSubmittedExpenseSearch(event)" style="width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 13px;">
+                        <input id="submitted-expenses-search" type="text" placeholder="Search submitted expenses..." data-i18n-placeholder="exp_search_placeholder" oninput="onSubmittedExpenseSearch(event)" style="width: 100%; padding: 10px 12px; border: 2px solid rgba(255,255,255,0.08); border-radius: 8px; font-size: 13px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     
                     <div id="submitted-expenses-list">
@@ -564,29 +692,29 @@
 
     <!-- Add Payment Modal -->
     <div id="paymentModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; margin: 20px;">
-            <h2 style="margin-bottom: 20px; color: #1e293b;" data-i18n="add_payment">💰 Add Payment</h2>
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; margin: 20px;">
+            <h2 style="margin-bottom: 20px; color: #f1f5f9;" data-i18n="add_payment">💰 Add Payment</h2>
             
-            <div id="paymentModalInfo" style="background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; color: #64748b;">
+            <div id="paymentModalInfo" style="background: #14141f; border: 1px solid rgba(255,255,255,0.06); padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; color: #94a3b8;">
             </div>
             
             <div class="input-group">
                 <label for="paymentAmount" data-i18n="payment_amount">Payment Amount (MAD)</label>
-                <input type="number" id="paymentAmount" placeholder="Enter amount received" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="paymentAmount" placeholder="Enter amount received" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
-            <div id="markFullyPaidSection" style="display: none; margin-top: 15px; padding: 12px; background: #fef3c7; border: 2px solid #fbbf24; border-radius: 10px;">
-                <label style="display: flex; align-items: center; cursor: pointer; font-size: 14px; color: #92400e;">
+            <div id="markFullyPaidSection" style="display: none; margin-top: 15px; padding: 12px; background: rgba(245,158,11,0.10); border: 2px solid rgba(245,158,11,0.4); border-radius: 10px;">
+                <label style="display: flex; align-items: center; cursor: pointer; font-size: 14px; color: #fbbf24;">
                     <input type="checkbox" id="markFullyPaidCheckbox" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
                     <span>
                         <strong data-i18n="mark_fully_paid">Mark as fully paid</strong><br>
-                        <span style="font-size: 12px; color: #b45309;" data-i18n="client_cannot_pay_more">(Client cannot pay the remaining amount)</span>
+                        <span style="font-size: 12px; color: #d6a35a;" data-i18n="client_cannot_pay_more">(Client cannot pay the remaining amount)</span>
                     </span>
                 </label>
             </div>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="closePaymentModal()" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;" data-i18n="cancel">Cancel</button>
+                <button onclick="closePaymentModal()" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;" data-i18n="cancel">Cancel</button>
                 <button onclick="addPayment()" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #10b981; color: white;" data-i18n="add_payment">Add Payment</button>
             </div>
         </div>
@@ -595,26 +723,26 @@
     <!-- Expense Modals -->
     <!-- Repair Modal -->
     <div id="repairModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
-            <h2 style="margin-bottom: 20px; color: #1e293b;">🔧 <span data-i18n="exp_add_repair">Add Repair Expense</span></h2>
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
+            <h2 style="margin-bottom: 20px; color: #f1f5f9;">🔧 <span data-i18n="exp_add_repair">Add Repair Expense</span></h2>
             
             <div class="input-group">
                 <label data-i18n="exp_date">📅 Date</label>
-                <input type="date" id="repair-date" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="date" id="repair-date" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_amount">💰 Amount (MAD)</label>
-                <input type="number" id="repair-amount" placeholder="Enter repair cost" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="repair-amount" placeholder="Enter repair cost" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_description">📝 Description</label>
-                <textarea id="repair-description" placeholder="What was repaired?" rows="3" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; resize: vertical;"></textarea>
+                <textarea id="repair-description" placeholder="What was repaired?" rows="3" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; resize: vertical; background: #1b1b28; color: #f1f5f9;"></textarea>
             </div>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;" data-i18n="cancel">Cancel</button>
+                <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;" data-i18n="cancel">Cancel</button>
                 <button onclick="saveExpense('repair')" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #ef4444; color: white;" data-i18n="exp_save">Save Expense</button>
             </div>
         </div>
@@ -622,36 +750,36 @@
 
     <!-- Fuel Modal -->
     <div id="fuelModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
-            <h2 style="margin-bottom: 20px; color: #1e293b;">⛽ <span data-i18n="exp_add_fuel">Add Fuel Expense</span></h2>
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
+            <h2 style="margin-bottom: 20px; color: #f1f5f9;">⛽ <span data-i18n="exp_add_fuel">Add Fuel Expense</span></h2>
             
             <div class="input-group">
                 <label data-i18n="exp_date">📅 Date</label>
-                <input type="date" id="fuel-date" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="date" id="fuel-date" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_total_amount">💰 Total Amount (MAD)</label>
-                <input type="number" id="fuel-total-amount" placeholder="e.g., 500" step="0.01" min="0" oninput="calculateFuelFromTotal()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="fuel-total-amount" placeholder="e.g., 500" step="0.01" min="0" oninput="calculateFuelFromTotal()" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_liters">⛽ Liters</label>
-                <input type="number" id="fuel-liters" placeholder="e.g., 50" step="0.1" min="0" oninput="calculateFuelBidirectional()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="fuel-liters" placeholder="e.g., 50" step="0.1" min="0" oninput="calculateFuelBidirectional()" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_price_per_liter">💰 Price per Liter (MAD)</label>
-                <input type="number" id="fuel-price-per-liter" placeholder="e.g., 12.50" step="0.01" min="0" oninput="calculateFuelFromPrice()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="fuel-price-per-liter" placeholder="e.g., 12.50" step="0.01" min="0" oninput="calculateFuelFromPrice()" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_description">📝 Description (Optional)</label>
-                <textarea id="fuel-description" placeholder="Any notes..." rows="2" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; resize: vertical;"></textarea>
+                <textarea id="fuel-description" placeholder="Any notes..." rows="2" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; resize: vertical; background: #1b1b28; color: #f1f5f9;"></textarea>
             </div>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;" data-i18n="cancel">Cancel</button>
+                <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;" data-i18n="cancel">Cancel</button>
                 <button onclick="saveExpense('fuel')" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #f59e0b; color: white;" data-i18n="exp_save">Save Expense</button>
             </div>
         </div>
@@ -659,31 +787,31 @@
 
     <!-- Parts Modal -->
     <div id="partsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
-            <h2 style="margin-bottom: 20px; color: #1e293b;">⚙️ <span data-i18n="exp_add_parts">Add Parts Expense</span></h2>
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
+            <h2 style="margin-bottom: 20px; color: #f1f5f9;">⚙️ <span data-i18n="exp_add_parts">Add Parts Expense</span></h2>
             
             <div class="input-group">
                 <label data-i18n="exp_date">📅 Date</label>
-                <input type="date" id="parts-date" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="date" id="parts-date" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_part_name">🔩 Part Name</label>
-                <input type="text" id="parts-name" placeholder="e.g., Hydraulic Filter" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="text" id="parts-name" placeholder="e.g., Hydraulic Filter" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_price">💰 Price (MAD)</label>
-                <input type="number" id="parts-price" placeholder="Enter part price" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="parts-price" placeholder="Enter part price" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="exp_notes">📝 Notes (Optional)</label>
-                <textarea id="parts-notes" placeholder="Any additional notes..." rows="2" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; resize: vertical;"></textarea>
+                <textarea id="parts-notes" placeholder="Any additional notes..." rows="2" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; resize: vertical; background: #1b1b28; color: #f1f5f9;"></textarea>
             </div>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;" data-i18n="cancel">Cancel</button>
+                <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;" data-i18n="cancel">Cancel</button>
                 <button onclick="saveExpense('parts')" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #8b5cf6; color: white;" data-i18n="exp_save">Save Expense</button>
             </div>
         </div>
@@ -691,36 +819,36 @@
 
     <!-- Driver Payment Modal -->
     <div id="driverModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
-            <h2 style="margin-bottom: 20px; color: #1e293b;">🚚 <span data-i18n="exp_add_driver">Add Driver Payment</span></h2>
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
+            <h2 style="margin-bottom: 20px; color: #f1f5f9;">🚚 <span data-i18n="exp_add_driver">Add Driver Payment</span></h2>
 
             <div class="input-group">
                 <label data-i18n="exp_from_date">📅 From Date</label>
-                <input type="date" id="driver-from-date" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="date" id="driver-from-date" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
 
             <div class="input-group">
                 <label data-i18n="exp_to_date">📅 To Date</label>
-                <input type="date" id="driver-to-date" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="date" id="driver-to-date" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
 
             <div class="input-group">
                 <label data-i18n="exp_driver_name">👤 Driver Name</label>
-                <input type="text" id="driver-name" placeholder="Driver name" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="text" id="driver-name" placeholder="Driver name" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
 
             <div class="input-group">
                 <label data-i18n="exp_amount">💰 Amount (MAD)</label>
-                <input type="number" id="driver-amount" placeholder="Enter payment amount" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="driver-amount" placeholder="Enter payment amount" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
 
             <div class="input-group">
                 <label data-i18n="exp_description">📝 Description</label>
-                <textarea id="driver-description" placeholder="Optional notes..." rows="2" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; resize: vertical;"></textarea>
+                <textarea id="driver-description" placeholder="Optional notes..." rows="2" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; resize: vertical; background: #1b1b28; color: #f1f5f9;"></textarea>
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;" data-i18n="cancel">Cancel</button>
+                <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;" data-i18n="cancel">Cancel</button>
                 <button onclick="saveExpense('driver')" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #06b6d4; color: white;" data-i18n="exp_save">Save Expense</button>
             </div>
         </div>
@@ -728,27 +856,27 @@
 
     <!-- Edit Expense Modal -->
     <div id="editExpenseModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
-            <h2 style="margin-bottom: 20px; color: #1e293b;">✏️ <span data-i18n="exp_edit">Edit Expense</span></h2>
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px;">
+            <h2 style="margin-bottom: 20px; color: #f1f5f9;">✏️ <span data-i18n="exp_edit">Edit Expense</span></h2>
             <div id="editExpenseContent"></div>
         </div>
     </div>
 
     <!-- Device Registration Screen -->
-    <div id="registrationScreen" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); z-index: 3000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 40px; max-width: 450px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;">
+    <div id="registrationScreen" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(160deg, #1a1a2e 0%, #14141f 60%); z-index: 3000; align-items: center; justify-content: center;">
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 40px; max-width: 450px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); text-align: center;">
             <div style="font-size: 64px; margin-bottom: 20px;">🔐</div>
-            <h2 style="font-size: 24px; color: #1e293b; margin-bottom: 10px;" data-i18n="device_registration">Device Registration</h2>
-            <p style="color: #64748b; font-size: 14px; margin-bottom: 30px; line-height: 1.6;">
+            <h2 style="font-size: 24px; color: #f1f5f9; margin-bottom: 10px;" data-i18n="device_registration">Device Registration</h2>
+            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 30px; line-height: 1.6;">
                 <span data-i18n="registration_desc">Enter your registration code to access the app. Contact your admin if you don't have a code.</span>
             </p>
             
             <div style="margin-bottom: 20px;">
                 <input type="text" id="registrationCodeInput" placeholder="Enter registration code" 
-                    style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; text-align: center; text-transform: uppercase; font-family: monospace; letter-spacing: 2px;">
+                    style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; text-align: center; text-transform: uppercase; font-family: monospace; letter-spacing: 2px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
-            <div id="registrationError" style="display: none; background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;"></div>
+            <div id="registrationError" style="display: none; background: rgba(239,68,68,0.12); color: #f87171; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;"></div>
             
             <button id="registerDeviceBtn" onclick="registerDevice()" 
                 style="width: 100%; padding: 18px; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; transition: transform 0.2s;">
@@ -764,20 +892,20 @@
 
     <!-- Custom Alert Modal -->
     <div id="customAlertModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 4000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
             <div id="customAlertIcon" style="text-align: center; font-size: 48px; margin-bottom: 15px;">ℹ️</div>
-            <div id="customAlertMessage" style="font-size: 16px; color: #1e293b; text-align: center; margin-bottom: 25px; line-height: 1.6; white-space: pre-wrap;"></div>
+            <div id="customAlertMessage" style="font-size: 16px; color: #f1f5f9; text-align: center; margin-bottom: 25px; line-height: 1.6; white-space: pre-wrap;"></div>
             <button id="customAlertOkBtn" style="width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white;">OK</button>
         </div>
     </div>
 
     <!-- Custom Confirm Modal -->
     <div id="customConfirmModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 4000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
             <div id="customConfirmIcon" style="text-align: center; font-size: 48px; margin-bottom: 15px;">❓</div>
-            <div id="customConfirmMessage" style="font-size: 16px; color: #1e293b; text-align: center; margin-bottom: 25px; line-height: 1.6; white-space: pre-wrap;"></div>
+            <div id="customConfirmMessage" style="font-size: 16px; color: #f1f5f9; text-align: center; margin-bottom: 25px; line-height: 1.6; white-space: pre-wrap;"></div>
             <div style="display: flex; gap: 10px;">
-                <button id="customConfirmCancelBtn" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;">Cancel</button>
+                <button id="customConfirmCancelBtn" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;">Cancel</button>
                 <button id="customConfirmOkBtn" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">OK</button>
             </div>
         </div>
@@ -785,29 +913,29 @@
 
     <!-- Edit Session Modal -->
     <div id="editSessionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; overflow-y: auto;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-            <h2 style="margin-bottom: 20px; color: #1e293b; text-align: center;">✏️ <span data-i18n="edit_session">Edit Session</span></h2>
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <h2 style="margin-bottom: 20px; color: #f1f5f9; text-align: center;">✏️ <span data-i18n="edit_session">Edit Session</span></h2>
             
             <div class="input-group">
                 <label data-i18n="job_site">📍 Job Site</label>
-                <input type="text" id="edit-job-site" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="text" id="edit-job-site" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="client_name">👤 Client Name</label>
-                <input type="text" id="edit-client-name" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="text" id="edit-client-name" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="hourly_rate">💰 Hourly Rate (MAD)</label>
-                <input type="number" id="edit-hourly-rate" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="edit-hourly-rate" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="start_time">🕐 Start Time (24h format: HH:MM)</label>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <input type="text" id="edit-start-time" placeholder="08:30" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
-                    <select id="edit-start-period" style="display: none; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; background: white; cursor: pointer;">
+                    <select id="edit-start-period" style="display: none; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9; cursor: pointer;">
                         <option value="AM" data-i18n="morning">Morning (AM)</option>
                         <option value="PM" data-i18n="evening">Evening (PM)</option>
                     </select>
@@ -818,21 +946,21 @@
                 <label data-i18n="stop_time">🕐 Stop Time (24h format: HH:MM)</label>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <input type="text" id="edit-stop-time" placeholder="17:00" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
-                    <select id="edit-stop-period" style="display: none; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; background: white; cursor: pointer;">
+                    <select id="edit-stop-period" style="display: none; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9; cursor: pointer;">
                         <option value="AM" data-i18n="morning">Morning (AM)</option>
                         <option value="PM" data-i18n="evening">Evening (PM)</option>
                     </select>
                 </div>
             </div>
             
-            <div id="edit-calculated-result" style="display: none; background: #f0fdf4; border: 2px solid #22c55e; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
-                <div style="font-size: 14px; color: #166534; margin-bottom: 5px;">Duration & Payment</div>
-                <div style="font-size: 24px; font-weight: bold; color: #15803d;" id="edit-duration-display">0h 0m</div>
-                <div style="font-size: 28px; font-weight: bold; color: #15803d; margin-top: 5px;" id="edit-payment-display">0 MAD</div>
+            <div id="edit-calculated-result" style="display: none; background: rgba(34,197,94,0.10); border: 2px solid rgba(34,197,94,0.35); padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                <div style="font-size: 14px; color: #4ade80; margin-bottom: 5px;">Duration & Payment</div>
+                <div style="font-size: 24px; font-weight: bold; color: #4ade80;" id="edit-duration-display">0h 0m</div>
+                <div style="font-size: 28px; font-weight: bold; color: #4ade80; margin-top: 5px;" id="edit-payment-display">0 MAD</div>
             </div>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="closeEditSessionModal()" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;" data-i18n="cancel">Cancel</button>
+                <button onclick="closeEditSessionModal()" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;" data-i18n="cancel">Cancel</button>
                 <button onclick="saveEditedSession()" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;" data-i18n="save_changes">Save Changes</button>
             </div>
         </div>
@@ -840,20 +968,20 @@
 
     <!-- Price Adjustment Modal -->
     <div id="priceAdjustModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 450px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-            <h2 style="margin-bottom: 20px; color: #1e293b; text-align: center;">💰 <span data-i18n="adjust_price">Adjust Price</span></h2>
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 450px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <h2 style="margin-bottom: 20px; color: #f1f5f9; text-align: center;">💰 <span data-i18n="adjust_price">Adjust Price</span></h2>
             
-            <div id="priceAdjustInfo" style="background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; color: #64748b;">
+            <div id="priceAdjustInfo" style="background: #14141f; border: 1px solid rgba(255,255,255,0.06); padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; color: #94a3b8;">
             </div>
             
             <div class="input-group">
                 <label data-i18n="adjusted_price">Adjusted Price (MAD)</label>
-                <input type="number" id="adjustedPriceInput" placeholder="Enter new price" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                <input type="number" id="adjustedPriceInput" placeholder="Enter new price" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
             </div>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="closePriceAdjustModal()" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;" data-i18n="cancel">Cancel</button>
-                <button onclick="resetPrice()" style="flex: 1; padding: 15px; border: 2px solid #f59e0b; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #f59e0b;" data-i18n="reset_price">Reset</button>
+                <button onclick="closePriceAdjustModal()" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;" data-i18n="cancel">Cancel</button>
+                <button onclick="resetPrice()" style="flex: 1; padding: 15px; border: 2px solid #f59e0b; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: rgba(245,158,11,0.12); color: #f59e0b;" data-i18n="reset_price">Reset</button>
                 <button onclick="applyPriceAdjustment()" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;" data-i18n="apply_discount">Apply</button>
             </div>
         </div>
@@ -1003,15 +1131,58 @@
         async function checkExistingDevice() {
             try {
                 console.log('🔍 Checking if device is already registered...');
+
+                // 1) PRIMARY: trust the persisted localStorage registration.
+                //    Browser fingerprints drift (browser updates, screen/orientation
+                //    changes, etc.) so we must NOT rely on them to recognise a device
+                //    that already registered — otherwise we create duplicate records.
+                const localDeviceId = localStorage.getItem('deviceId');
+                const localRole = localStorage.getItem('deviceRole');
+                const localWorkerName = localStorage.getItem('workerName');
+
+                if (localDeviceId && localRole === 'worker' && localWorkerName) {
+                    console.log('✅ Found saved registration locally, trusting it:', localWorkerName);
+                    const deviceRef = ref(database, 'registeredDevices/' + localDeviceId);
+                    try {
+                        const snap = await get(deviceRef);
+                        if (snap.exists()) {
+                            // Keep last active time fresh
+                            await update(deviceRef, { lastActive: Date.now() });
+                        } else {
+                            // Record missing in Firebase (e.g. fingerprint drift in an
+                            // earlier version, or admin cleanup) -> restore the SAME id
+                            // instead of registering a brand new device.
+                            await set(deviceRef, {
+                                role: 'worker',
+                                workerName: localWorkerName,
+                                registeredAt: Date.now(),
+                                lastActive: Date.now(),
+                                restored: true,
+                                deviceInfo: navigator.userAgent
+                            });
+                            console.log('♻️ Restored missing device record in Firebase (no duplicate created)');
+                        }
+                    } catch (netErr) {
+                        // Offline / network error: still trust local registration so the
+                        // worker is never locked out and we never re-register.
+                        console.warn('⚠️ Could not verify device in Firebase, continuing with local registration', netErr);
+                    }
+                    await loadWorkerDataFromFirebase(localWorkerName);
+                    return true;
+                }
+
+                // 2) FALLBACK: no local registration yet -> look up by fingerprint once
+                //    (covers devices registered before this fix, or after localStorage
+                //    was cleared). On success we persist the id locally so step 1 handles
+                //    every future launch.
+                console.log('🔍 No saved registration, checking by device fingerprint...');
                 const stableDeviceId = await generateStableDeviceId();
-                
-                // Check in registeredDevices
                 const deviceRef = ref(database, 'registeredDevices/' + stableDeviceId);
                 const deviceSnapshot = await get(deviceRef);
                 
                 if (deviceSnapshot.exists()) {
                     const deviceData = deviceSnapshot.val();
-                    console.log('✅ Device already registered:', deviceData);
+                    console.log('✅ Device already registered (fingerprint match):', deviceData);
                     
                     if (deviceData.role === 'worker' && deviceData.workerName) {
                         // Device is already registered - load data and skip registration
@@ -1034,6 +1205,14 @@
                 return false; // Device not registered
             } catch (error) {
                 console.error('❌ Error checking existing device:', error);
+                // Last resort: if we have a local registration, trust it rather than
+                // locking the worker out or forcing a duplicate registration.
+                const fallbackId = localStorage.getItem('deviceId');
+                const fallbackName = localStorage.getItem('workerName');
+                if (fallbackId && fallbackName) {
+                    try { await loadWorkerDataFromFirebase(fallbackName); } catch (e) {}
+                    return true;
+                }
                 return false;
             }
         }
@@ -1383,7 +1562,7 @@
         function showSyncIndicator(status) {
             if (!syncIndicator) {
                 syncIndicator = document.createElement('div');
-                syncIndicator.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: white; padding: 10px 15px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; display: flex; align-items: center; gap: 8px; font-size: 12px; transition: all 0.3s;';
+                syncIndicator.style.cssText = 'position: fixed; bottom: 90px; right: 20px; background: #21212f; color: #f1f5f9; border: 1px solid rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 1000; display: flex; align-items: center; gap: 8px; font-size: 12px; transition: all 0.3s;';
                 document.body.appendChild(syncIndicator);
             }
             
@@ -1894,6 +2073,7 @@
                 today_summary: "📊 Today's Summary",
                 total_all_summary: "📈 Total ALL Sessions",
                 live_submission_finance: "💼 Submission Finance",
+                earnings: "Earnings",
                 total_billed: "Total Billed",
                 total_paid: "Total Paid",
                 remaining_simple: "Remaining",
@@ -2063,6 +2243,7 @@
                 payment: "المبلغ",
                 today_summary: "📊 ملخص اليوم",
                 live_submission_finance: "💼 ملخص الحسابات",
+                earnings: "الأرباح",
                 total_billed: "المجموع الكلي",
                 total_paid: "المقبوض",
                 remaining_simple: "المتبقي",
@@ -2508,6 +2689,14 @@
             }
             document.getElementById('timer').textContent = formatTime(elapsedTime);
             document.getElementById('payment').textContent = calculatePayment(elapsedTime, currentJob.rate) + ' MAD';
+
+            // Sweep the amber progress ring once per minute (purely visual).
+            const ring = document.getElementById('timer-ring-progress');
+            if (ring) {
+                const circumference = 553;
+                const fraction = (elapsedTime % 60) / 60;
+                ring.style.strokeDashoffset = circumference * (1 - fraction);
+            }
         }
 
         function startTimer() {
@@ -2677,7 +2866,7 @@
                 // Check if session is unsent (can be edited)
                 const isUnsent = h.sent === false || h.sent === undefined;
                 const editBtn = isUnsent 
-                    ? '<button class="delete-history-btn" onclick="editHistory(' + actualIndex + ')" style="right: 70px; background: #dbeafe; color: #2563eb;">✏️ ' + t('edit') + '</button>' 
+                    ? '<button class="delete-history-btn" onclick="editHistory(' + actualIndex + ')" style="right: 70px; background: rgba(245,158,11,0.15); color: #f59e0b;">✏️ ' + t('edit') + '</button>' 
                     : '';
                 
                 // Check if this is a duration entry
@@ -2693,14 +2882,14 @@
                 return '<div class="history-item">' +
                     '<button class="delete-history-btn" onclick="deleteHistory(' + actualIndex + ')">' + t('delete') + '</button>' +
                     editBtn +
-                    '<div style="font-size: 12px; color: #64748b; margin-bottom: 5px;">' + 
+                    '<div style="font-size: 12px; color: #94a3b8; margin-bottom: 5px;">' + 
                     formatDate(date) + '</div>' +
-                    '<div style="font-size: 11px; color: #64748b; margin-bottom: 5px;">' + timeDisplay + '</div>' +
-                    '<div style="font-size: 13px; color: #64748b; margin-bottom: 3px;">📍 ' + jobSite + '</div>' +
-                    '<div style="font-weight: 600; margin-bottom: 8px;">👤 ' + clientName + '</div>' +
-                    '<div style="display: flex; justify-content: space-between; font-size: 14px; padding-right: 80px;">' +
+                    '<div style="font-size: 11px; color: #94a3b8; margin-bottom: 5px;">' + timeDisplay + '</div>' +
+                    '<div style="font-size: 13px; color: #94a3b8; margin-bottom: 3px;">📍 ' + jobSite + '</div>' +
+                    '<div style="font-weight: 600; margin-bottom: 8px; color: #f1f5f9;">👤 ' + clientName + '</div>' +
+                    '<div style="display: flex; justify-content: space-between; font-size: 14px; padding-right: 80px; color: #cbd5e1;">' +
                     '<span>' + formatHM(h.duration) + ' @ ' + h.rate + ' MAD/hr</span>' +
-                    '<span style="color: #2563eb; font-weight: 600; font-size: 16px;">' + h.payment + ' MAD</span></div></div>';
+                    '<span style="color: #f59e0b; font-weight: 600; font-size: 16px;">' + h.payment + ' MAD</span></div></div>';
             }).join('');
         }
 
@@ -2859,12 +3048,12 @@
                 const modal = document.createElement('div');
                 modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 5000; align-items: center; justify-content: center;';
                 modal.innerHTML = `
-                    <div style="background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
                         <div style="text-align: center; font-size: 48px; margin-bottom: 15px;">${icon}</div>
-                        <div style="font-size: 16px; color: #1e293b; text-align: center; margin-bottom: 20px; line-height: 1.6;">${message}</div>
+                        <div style="font-size: 16px; color: #f1f5f9; text-align: center; margin-bottom: 20px; line-height: 1.6;">${message}</div>
                         <input type="text" id="customPromptInput" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box;" placeholder="Enter your name" autofocus>
                         <div style="display: flex; gap: 10px;">
-                            <button id="customPromptCancelBtn" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;">Cancel</button>
+                            <button id="customPromptCancelBtn" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;">Cancel</button>
                             <button id="customPromptOkBtn" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white;">OK</button>
                         </div>
                     </div>
@@ -3011,31 +3200,31 @@
                 const isPriceAdjusted = session.adjustedPrice !== undefined && session.adjustedPrice !== session.payment;
                 
                 sessionListHTML += 
-                    '<div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid ' + (isPriceAdjusted ? '#f59e0b' : '#2563eb') + ';">' +
-                    '<div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">📍 ' + jobSite + '</div>' +
-                    '<div style="font-weight: 600; font-size: 14px; margin-bottom: 5px;">👤 ' + clientName + '</div>' +
+                    '<div style="background: #1b1b28; border: 1px solid rgba(255,255,255,0.07); padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid ' + (isPriceAdjusted ? '#f59e0b' : '#f59e0b') + ';">' +
+                    '<div style="font-size: 12px; color: #94a3b8; margin-bottom: 3px;">📍 ' + jobSite + '</div>' +
+                    '<div style="font-weight: 600; font-size: 14px; margin-bottom: 5px; color: #f1f5f9;">👤 ' + clientName + '</div>' +
                     '<div style="display: flex; justify-content: space-between; align-items: center;">' +
-                    '<div style="font-size: 13px; color: #64748b;">' + formatHM(session.duration) + '</div>' +
+                    '<div style="font-size: 13px; color: #94a3b8;">' + formatHM(session.duration) + '</div>' +
                     '<div style="text-align: right;">' +
                     (isPriceAdjusted ? 
                         '<div style="font-size: 11px; color: #94a3b8; text-decoration: line-through;">' + originalPrice.toFixed(2) + ' MAD</div>' +
-                        '<div style="font-size: 16px; font-weight: 600; color: #f59e0b;">⚡ ' + currentPrice.toFixed(2) + ' MAD</div>' 
+                        '<div style="font-size: 16px; font-weight: 600; color: #fbbf24;">⚡ ' + currentPrice.toFixed(2) + ' MAD</div>' 
                         : 
-                        '<div style="font-size: 16px; font-weight: 600; color: #2563eb;">' + currentPrice.toFixed(2) + ' MAD</div>'
+                        '<div style="font-size: 16px; font-weight: 600; color: #f59e0b;">' + currentPrice.toFixed(2) + ' MAD</div>'
                     ) +
                     '</div></div>' +
-                    '<button onclick="showPriceAdjustModal(' + actualIndex + ')" style="width: 100%; margin-top: 8px; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer;">💰 ' + t('adjust_price') + '</button>' +
+                    '<button onclick="showPriceAdjustModal(' + actualIndex + ')" style="width: 100%; margin-top: 8px; padding: 8px; background: #14141f; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; font-size: 12px; font-weight: 600; color: #94a3b8; cursor: pointer;">💰 ' + t('adjust_price') + '</button>' +
                     '</div>';
             });
 
             document.getElementById('submit-summary').innerHTML = sessionListHTML +
-                '<div style="margin-top: 15px; padding: 15px; background: #f0f9ff; border-radius: 8px; border: 2px solid #0ea5e9;">' +
+                '<div style="margin-top: 15px; padding: 15px; background: rgba(59,130,246,0.10); border-radius: 8px; border: 1px solid rgba(59,130,246,0.30);">' +
                 '<div style="display: flex; justify-content: space-between; margin-bottom: 5px;">' +
-                '<span style="color: #0c4a6e; font-weight: 600;">' + t('total_hours') + '</span>' +
-                '<strong style="color: #0c4a6e;">' + formatHM(totalSeconds) + '</strong></div>' +
+                '<span style="color: #93c5fd; font-weight: 600;">' + t('total_hours') + '</span>' +
+                '<strong style="color: #bfdbfe;">' + formatHM(totalSeconds) + '</strong></div>' +
                 '<div style="display: flex; justify-content: space-between;">' +
-                '<span style="color: #0c4a6e; font-weight: 600;">' + t('total_payment') + '</span>' +
-                '<strong style="color: #0369a1; font-size: 18px;">' + totalPayment.toFixed(2) + ' MAD</strong></div></div>';
+                '<span style="color: #93c5fd; font-weight: 600;">' + t('total_payment') + '</span>' +
+                '<strong style="color: #60a5fa; font-size: 18px;">' + totalPayment.toFixed(2) + ' MAD</strong></div></div>';
             
             if (submitBtn) {
                 submitBtn.disabled = false;
@@ -3184,21 +3373,21 @@
             const btnCompleted = document.getElementById('submission-tab-completed');
             
             if (tab === 'active') {
-                btnActive.style.background = '#2563eb';
-                btnActive.style.color = 'white';
-                btnActive.style.borderColor = '#2563eb';
+                btnActive.style.background = '#f59e0b';
+                btnActive.style.color = '#14141f';
+                btnActive.style.borderColor = '#f59e0b';
                 
-                btnCompleted.style.background = 'white';
-                btnCompleted.style.color = '#64748b';
-                btnCompleted.style.borderColor = '#e2e8f0';
+                btnCompleted.style.background = '#1b1b28';
+                btnCompleted.style.color = '#94a3b8';
+                btnCompleted.style.borderColor = 'rgba(255,255,255,0.08)';
             } else {
-                btnCompleted.style.background = '#2563eb';
-                btnCompleted.style.color = 'white';
-                btnCompleted.style.borderColor = '#2563eb';
+                btnCompleted.style.background = '#f59e0b';
+                btnCompleted.style.color = '#14141f';
+                btnCompleted.style.borderColor = '#f59e0b';
                 
-                btnActive.style.background = 'white';
-                btnActive.style.color = '#64748b';
-                btnActive.style.borderColor = '#e2e8f0';
+                btnActive.style.background = '#1b1b28';
+                btnActive.style.color = '#94a3b8';
+                btnActive.style.borderColor = 'rgba(255,255,255,0.08)';
             }
             
             // Re-render submissions with filter
@@ -3302,7 +3491,7 @@
                 
                 const paymentsHistory = (s.payments || []).map(p => {
                     const pDate = new Date(p.date);
-                    return '<div style="font-size: 11px; color: #64748b; padding: 3px 0;">✅ ' + 
+                    return '<div style="font-size: 11px; color: #94a3b8; padding: 3px 0;">✅ ' + 
                            p.amount.toFixed(2) + ' MAD - ' + 
                            formatDate(pDate) + ' ' + pDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + 
                            '</div>';
@@ -3313,12 +3502,12 @@
                     : '';
                 const issueFlagged = !!s.issueFlagged && !s.issueResolved;
                 const issueBtn = issueFlagged
-                    ? '<button disabled style="background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-top: 8px; margin-left: 8px; cursor: not-allowed;">🚩 Issue Reported</button>'
+                    ? '<button disabled style="background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-top: 8px; margin-left: 8px; cursor: not-allowed;">🚩 Issue Reported</button>'
                     : '<button onclick="markSubmissionIssue(' + s.timestamp + ')" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 8px; margin-left: 8px;">🚩 Report Issue</button>';
                 const issueNoteBlock = issueFlagged
-                    ? '<div style="margin-top: 8px; padding: 8px; background: #fff7ed; border: 1px solid #fdba74; border-radius: 6px;">' +
-                        '<div style="font-size: 11px; font-weight: 700; color: #9a3412;">🚩 Reported to admin for correction</div>' +
-                        '<div style="font-size: 11px; color: #7c2d12; margin-top: 3px;">' + (s.issueNote ? s.issueNote : 'Worker marked this submission as having a problem.') + '</div>' +
+                    ? '<div style="margin-top: 8px; padding: 8px; background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.30); border-radius: 6px;">' +
+                        '<div style="font-size: 11px; font-weight: 700; color: #fca5a5;">🚩 Reported to admin for correction</div>' +
+                        '<div style="font-size: 11px; color: #f87171; margin-top: 3px;">' + (s.issueNote ? s.issueNote : 'Worker marked this submission as having a problem.') + '</div>' +
                       '</div>'
                     : '';
                 
@@ -3335,7 +3524,7 @@
                         '</div>';
                 } else {
                     // Normal display
-                    totalPaymentDisplay = '<strong style="color: #2563eb;">' + s.totalPayment + ' MAD</strong>';
+                    totalPaymentDisplay = '<strong style="color: #60a5fa;">' + s.totalPayment + ' MAD</strong>';
                 }
                 
                 // Submission date (when it was created/submitted)
@@ -3352,47 +3541,47 @@
                     ? '📅 Work: ' + workDateStr + ' <span style="color: #94a3b8; font-size: 10px;">| Submitted: ' + submissionDateStr + ' ' + submissionTimeStr + '</span>'
                     : '📅 ' + workDateStr + ' <span style="color: #94a3b8; font-size: 10px;">at ' + submissionTimeStr + '</span>';
                 
-                return '<div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid ' + statusColor + ';">' +
-                    '<div style="font-size: 12px; color: #64748b; margin-bottom: 5px;">' + 
+                return '<div style="background: #1b1b28; border: 1px solid rgba(255,255,255,0.07); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid ' + statusColor + ';">' +
+                    '<div style="font-size: 12px; color: #94a3b8; margin-bottom: 5px;">' + 
                     dateDisplay + '</div>' +
                     
-                    '<div style="font-size: 13px; color: #64748b; margin-bottom: 3px;">📍 ' + jobSites + '</div>' +
-                    '<div style="font-weight: 600; font-size: 16px; color: #2563eb; margin-bottom: 8px;">👤 ' + clientName + '</div>' +
+                    '<div style="font-size: 13px; color: #94a3b8; margin-bottom: 3px;">📍 ' + jobSites + '</div>' +
+                    '<div style="font-weight: 600; font-size: 16px; color: #f1f5f9; margin-bottom: 8px;">👤 ' + clientName + '</div>' +
                     
-                    '<div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">' +
+                    '<div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: #cbd5e1;">' +
                     '<span>' + s.sessions.length + ' ' + (s.sessions.length === 1 ? t('session') : t('sessions')) + ' · ' + s.totalHours + '</span>' +
                     totalPaymentDisplay + '</div>' +
                     
                     '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">' +
                     '<span style="font-size: 12px; font-weight: 600; color: ' + statusColor + ';">' + statusText + '</span>' +
-                    '<span style="font-size: 11px; color: #64748b;">' + statusMessage + '</span></div>' +
+                    '<span style="font-size: 11px; color: #94a3b8;">' + statusMessage + '</span></div>' +
                     
-                    '<div style="background: white; padding: 10px; border-radius: 6px; margin-top: 8px;">' +
+                    '<div style="background: #14141f; border: 1px solid rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-top: 8px;">' +
                     '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">' +
                     '<span style="font-size: 12px; font-weight: 600; color: ' + paymentColor + ';">' + paymentIcon + ' ' + paymentText + '</span>' +
-                    '<span style="font-size: 11px; color: #64748b;">' + percentage + '%</span></div>' +
+                    '<span style="font-size: 11px; color: #94a3b8;">' + percentage + '%</span></div>' +
                     
                     (paymentStatus !== 'fully_paid' ? 
-                        '<div style="font-size: 12px; color: #64748b; margin-top: 5px;">' +
+                        '<div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">' +
                         t('paid') + ' <strong>' + totalPaid.toFixed(2) + ' MAD</strong> / ' + totalAmount.toFixed(2) + ' MAD<br>' +
-                        t('remaining') + ' <strong style="color: #ef4444;">' + remaining.toFixed(2) + ' MAD</strong></div>' 
+                        t('remaining') + ' <strong style="color: #f87171;">' + remaining.toFixed(2) + ' MAD</strong></div>' 
                         : 
                         // Check if this is a "marked as fully paid" case (show actual paid amount)
                         (s.fullyPaidNote ? 
                             '<div style="font-size: 12px; color: #f59e0b; margin-top: 5px;">' +
                             '<span style="text-decoration: line-through; color: #94a3b8;">' + totalAmount.toFixed(2) + ' MAD</span><br>' +
                             '<strong style="font-size: 16px; color: #f59e0b;">' + totalPaid.toFixed(2) + ' MAD</strong> ' +
-                            '<span style="font-size: 11px; color: #64748b;">(actual amount received)</span>' +
+                            '<span style="font-size: 11px; color: #94a3b8;">(actual amount received)</span>' +
                             '</div>' +
-                            '<div style="font-size: 11px; color: #f59e0b; margin-top: 5px; padding: 5px; background: #fef3c7; border-radius: 4px;">ℹ️ ' + s.fullyPaidNote + '</div>'
+                            '<div style="font-size: 11px; color: #fbbf24; margin-top: 5px; padding: 5px; background: rgba(245,158,11,0.12); border-radius: 4px;">ℹ️ ' + s.fullyPaidNote + '</div>'
                             :
-                            '<div style="font-size: 12px; color: #22c55e; margin-top: 5px;">✅ ' + t('fully_paid') + ': ' + totalAmount.toFixed(2) + ' MAD</div>'
+                            '<div style="font-size: 12px; color: #4ade80; margin-top: 5px;">✅ ' + t('fully_paid') + ': ' + totalAmount.toFixed(2) + ' MAD</div>'
                         )
                     ) +
                     
                     (paymentsHistory ? 
-                        '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">' +
-                        '<div style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px;">' + t('payment_history') + ':</div>' +
+                        '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">' +
+                        '<div style="font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 3px;">' + t('payment_history') + ':</div>' +
                         paymentsHistory + '</div>' 
                         : '') +
                     
@@ -3473,26 +3662,26 @@
                 durationFields.style.display = 'none';
                 
                 // Update button styles
-                timeRangeBtn.style.background = '#2563eb';
-                timeRangeBtn.style.color = 'white';
-                timeRangeBtn.style.borderColor = '#2563eb';
+                timeRangeBtn.style.background = '#f59e0b';
+                timeRangeBtn.style.color = '#14141f';
+                timeRangeBtn.style.borderColor = '#f59e0b';
                 
-                durationBtn.style.background = 'white';
-                durationBtn.style.color = '#64748b';
-                durationBtn.style.borderColor = '#e2e8f0';
+                durationBtn.style.background = '#1b1b28';
+                durationBtn.style.color = '#94a3b8';
+                durationBtn.style.borderColor = 'rgba(255,255,255,0.08)';
             } else {
                 // Show duration fields, hide time range fields
                 timeRangeFields.style.display = 'none';
                 durationFields.style.display = 'block';
                 
                 // Update button styles
-                timeRangeBtn.style.background = 'white';
-                timeRangeBtn.style.color = '#64748b';
-                timeRangeBtn.style.borderColor = '#e2e8f0';
+                timeRangeBtn.style.background = '#1b1b28';
+                timeRangeBtn.style.color = '#94a3b8';
+                timeRangeBtn.style.borderColor = 'rgba(255,255,255,0.08)';
                 
-                durationBtn.style.background = '#2563eb';
-                durationBtn.style.color = 'white';
-                durationBtn.style.borderColor = '#2563eb';
+                durationBtn.style.background = '#f59e0b';
+                durationBtn.style.color = '#14141f';
+                durationBtn.style.borderColor = '#f59e0b';
             }
             
             // Clear result display
@@ -4397,21 +4586,21 @@
             const btn12h = document.getElementById('time-format-12h');
             
             if (format === '24h') {
-                btn24h.style.background = '#2563eb';
-                btn24h.style.color = 'white';
-                btn24h.style.borderColor = '#2563eb';
+                btn24h.style.background = '#f59e0b';
+                btn24h.style.color = '#14141f';
+                btn24h.style.borderColor = '#f59e0b';
                 
-                btn12h.style.background = 'white';
-                btn12h.style.color = '#64748b';
-                btn12h.style.borderColor = '#e2e8f0';
+                btn12h.style.background = '#1b1b28';
+                btn12h.style.color = '#94a3b8';
+                btn12h.style.borderColor = 'rgba(255,255,255,0.08)';
             } else {
-                btn12h.style.background = '#2563eb';
-                btn12h.style.color = 'white';
-                btn12h.style.borderColor = '#2563eb';
+                btn12h.style.background = '#f59e0b';
+                btn12h.style.color = '#14141f';
+                btn12h.style.borderColor = '#f59e0b';
                 
-                btn24h.style.background = 'white';
-                btn24h.style.color = '#64748b';
-                btn24h.style.borderColor = '#e2e8f0';
+                btn24h.style.background = '#1b1b28';
+                btn24h.style.color = '#94a3b8';
+                btn24h.style.borderColor = 'rgba(255,255,255,0.08)';
             }
             
             // Show/hide AM/PM dropdowns
@@ -4787,7 +4976,7 @@
             badge.textContent = unsentExpenses.length;
             
             if (unsentExpenses.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #92400e; font-size: 13px;" data-i18n="exp_no_unsent">No unsent expenses</p>';
+                container.innerHTML = '<p style="text-align: center; color: #94a3b8; font-size: 13px;" data-i18n="exp_no_unsent">No unsent expenses</p>';
                 submitBtn.style.display = 'none';
                 applyLanguage();
                 return;
@@ -4818,27 +5007,27 @@
                 }
                 
                 return `
-                    <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px;">
+                    <div style="background: #1b1b28; border: 1px solid rgba(255,255,255,0.07); padding: 12px; border-radius: 8px; margin-bottom: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: start;">
                             <div style="flex: 1;">
-                                <div style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 3px;">
+                                <div style="font-size: 14px; font-weight: 600; color: #f1f5f9; margin-bottom: 3px;">
                                     ${icon} ${title}
                                 </div>
-                                <div style="font-size: 13px; color: #64748b; margin-bottom: 3px; font-weight: 500;">${details}</div>
-                                ${exp.type === 'fuel' && exp.description ? `<div style="font-size: 13px; color: #374151; margin-bottom: 3px; font-weight: 500;">📝 ${exp.description}</div>` : ''}
-                                ${exp.type === 'driver' && exp.description ? `<div style="font-size: 13px; color: #374151; margin-bottom: 3px; font-weight: 500;">📝 ${exp.description}</div>` : ''}
-                                ${exp.type === 'parts' && exp.notes ? `<div style="font-size: 13px; color: #374151; margin-bottom: 3px; font-weight: 500;">📝 ${exp.notes}</div>` : ''}
+                                <div style="font-size: 13px; color: #94a3b8; margin-bottom: 3px; font-weight: 500;">${details}</div>
+                                ${exp.type === 'fuel' && exp.description ? `<div style="font-size: 13px; color: #cbd5e1; margin-bottom: 3px; font-weight: 500;">📝 ${exp.description}</div>` : ''}
+                                ${exp.type === 'driver' && exp.description ? `<div style="font-size: 13px; color: #cbd5e1; margin-bottom: 3px; font-weight: 500;">📝 ${exp.description}</div>` : ''}
+                                ${exp.type === 'parts' && exp.notes ? `<div style="font-size: 13px; color: #cbd5e1; margin-bottom: 3px; font-weight: 500;">📝 ${exp.notes}</div>` : ''}
                                 <div style="font-size: 12px; color: #94a3b8;">📅 ${date}</div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 16px; font-weight: 700; color: #dc2626; margin-bottom: 8px;">
+                                <div style="font-size: 16px; font-weight: 700; color: #f87171; margin-bottom: 8px;">
                                     ${exp.amount.toFixed(2)} MAD
                                 </div>
                                 <div style="display: flex; gap: 5px;">
-                                    <button onclick="editExpense(${exp.id})" style="padding: 4px 10px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: #2563eb;">
+                                    <button onclick="editExpense(${exp.id})" style="padding: 4px 10px; border: 1px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.12); border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: #f59e0b;">
                                         ✏️ ${t('edit')}
                                     </button>
-                                    <button onclick="deleteExpense(${exp.id})" style="padding: 4px 10px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: #ef4444;">
+                                    <button onclick="deleteExpense(${exp.id})" style="padding: 4px 10px; border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.12); border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: #f87171;">
                                         🗑️
                                     </button>
                                 </div>
@@ -4865,87 +5054,87 @@
                 formHTML = `
                     <div class="input-group">
                         <label>${t('exp_date')}</label>
-                        <input type="date" id="edit-repair-date" value="${expense.date}" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="date" id="edit-repair-date" value="${expense.date}" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_amount')}</label>
-                        <input type="number" id="edit-repair-amount" value="${expense.amount}" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="number" id="edit-repair-amount" value="${expense.amount}" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_description')}</label>
-                        <textarea id="edit-repair-description" rows="3" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; resize: vertical;">${expense.description}</textarea>
+                        <textarea id="edit-repair-description" rows="3" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; resize: vertical; background: #1b1b28; color: #f1f5f9;">${expense.description}</textarea>
                     </div>
                 `;
             } else if (expense.type === 'fuel') {
                 formHTML = `
                     <div class="input-group">
                         <label>${t('exp_date')}</label>
-                        <input type="date" id="edit-fuel-date" value="${expense.date}" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="date" id="edit-fuel-date" value="${expense.date}" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_total_amount')}</label>
-                        <input type="number" id="edit-fuel-total" value="${expense.amount}" step="0.01" min="0" oninput="calculateEditFuelFromTotal()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="number" id="edit-fuel-total" value="${expense.amount}" step="0.01" min="0" oninput="calculateEditFuelFromTotal()" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_liters')}</label>
-                        <input type="number" id="edit-fuel-liters" value="${expense.liters}" step="0.1" min="0" oninput="calculateEditFuelBidirectional()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="number" id="edit-fuel-liters" value="${expense.liters}" step="0.1" min="0" oninput="calculateEditFuelBidirectional()" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_price_per_liter')}</label>
-                        <input type="number" id="edit-fuel-price" value="${expense.pricePerLiter}" step="0.01" min="0" oninput="calculateEditFuelFromPrice()" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="number" id="edit-fuel-price" value="${expense.pricePerLiter}" step="0.01" min="0" oninput="calculateEditFuelFromPrice()" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_description')}</label>
-                        <textarea id="edit-fuel-description" rows="2" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; resize: vertical;">${expense.description || ''}</textarea>
+                        <textarea id="edit-fuel-description" rows="2" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; resize: vertical; background: #1b1b28; color: #f1f5f9;">${expense.description || ''}</textarea>
                     </div>
                 `;
             } else if (expense.type === 'parts') {
                 formHTML = `
                     <div class="input-group">
                         <label>${t('exp_date')}</label>
-                        <input type="date" id="edit-parts-date" value="${expense.date}" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="date" id="edit-parts-date" value="${expense.date}" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_part_name')}</label>
-                        <input type="text" id="edit-parts-name" value="${expense.partName}" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="text" id="edit-parts-name" value="${expense.partName}" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_price')}</label>
-                        <input type="number" id="edit-parts-price" value="${expense.amount}" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="number" id="edit-parts-price" value="${expense.amount}" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_notes')}</label>
-                        <textarea id="edit-parts-notes" rows="2" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; resize: vertical;">${expense.notes || ''}</textarea>
+                        <textarea id="edit-parts-notes" rows="2" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; resize: vertical; background: #1b1b28; color: #f1f5f9;">${expense.notes || ''}</textarea>
                     </div>
                 `;
             } else if (expense.type === 'driver') {
                 formHTML = `
                     <div class="input-group">
                         <label>${t('exp_from_date')}</label>
-                        <input type="date" id="edit-driver-from-date" value="${expense.fromDate || expense.date}" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="date" id="edit-driver-from-date" value="${expense.fromDate || expense.date}" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_to_date')}</label>
-                        <input type="date" id="edit-driver-to-date" value="${expense.toDate || expense.date}" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="date" id="edit-driver-to-date" value="${expense.toDate || expense.date}" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_driver_name')}</label>
-                        <input type="text" id="edit-driver-name" value="${expense.driverName || ''}" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="text" id="edit-driver-name" value="${expense.driverName || ''}" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_amount')}</label>
-                        <input type="number" id="edit-driver-amount" value="${expense.amount}" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                        <input type="number" id="edit-driver-amount" value="${expense.amount}" step="0.01" min="0" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; background: #1b1b28; color: #f1f5f9;">
                     </div>
                     <div class="input-group">
                         <label>${t('exp_description')}</label>
-                        <textarea id="edit-driver-description" rows="2" style="width: 100%; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; resize: vertical;">${expense.description || ''}</textarea>
+                        <textarea id="edit-driver-description" rows="2" style="width: 100%; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; resize: vertical; background: #1b1b28; color: #f1f5f9;">${expense.description || ''}</textarea>
                     </div>
                 `;
             }
             
             formHTML += `
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: white; color: #64748b;">${t('cancel')}</button>
+                    <button onclick="closeExpenseModal()" style="flex: 1; padding: 15px; border: 2px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #1b1b28; color: #cbd5e1;">${t('cancel')}</button>
                     <button onclick="saveEditedExpense()" style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; background: #10b981; color: white;">${t('save_changes')}</button>
                 </div>
             `;
@@ -5247,11 +5436,11 @@
                     const status = item.parentStatus || 'pending';
                     let statusBadge;
                     if (status === 'approved') {
-                        statusBadge = '<span style="background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">✅ ' + t('exp_approved') + '</span>';
+                        statusBadge = '<span style="background: rgba(34,197,94,0.15); color: #4ade80; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">✅ ' + t('exp_approved') + '</span>';
                     } else if (status === 'rejected') {
-                        statusBadge = '<span style="background: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">❌ ' + t('exp_rejected') + '</span>';
+                        statusBadge = '<span style="background: rgba(239,68,68,0.15); color: #f87171; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">❌ ' + t('exp_rejected') + '</span>';
                     } else {
-                        statusBadge = '<span style="background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">⏳ ' + t('exp_pending') + '</span>';
+                        statusBadge = '<span style="background: rgba(245,158,11,0.15); color: #fbbf24; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">⏳ ' + t('exp_pending') + '</span>';
                     }
 
                     let icon = '📄';
@@ -5276,23 +5465,23 @@
                     }
 
                     return `
-                        <div style="background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #2563eb;">
+                        <div style="background: #1b1b28; border: 1px solid rgba(255,255,255,0.07); padding: 12px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #f59e0b;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <div style="font-size: 11px; color: #64748b;">📤 ${submittedDate} ${submittedTime}</div>
+                                <div style="font-size: 11px; color: #94a3b8;">📤 ${submittedDate} ${submittedTime}</div>
                                 ${statusBadge}
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                                 <div style="flex: 1;">
-                                    <div style="font-size: 14px; font-weight: 700; color: #1e293b;">${icon} ${title}</div>
-                                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">${details}</div>
+                                    <div style="font-size: 14px; font-weight: 700; color: #f1f5f9;">${icon} ${title}</div>
+                                    <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${details}</div>
                                     <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">📅 ${expenseDate}</div>
-                                    ${item.type === 'fuel' && item.description ? `<div style="font-size: 12px; color: #374151; margin-top: 2px; font-weight: 500;">📝 ${item.description}</div>` : ''}
-                                    ${item.type === 'driver' && item.description ? `<div style="font-size: 12px; color: #374151; margin-top: 2px; font-weight: 500;">📝 ${item.description}</div>` : ''}
-                                    ${item.type === 'parts' && item.notes ? `<div style="font-size: 12px; color: #374151; margin-top: 2px; font-weight: 500;">📝 ${item.notes}</div>` : ''}
+                                    ${item.type === 'fuel' && item.description ? `<div style="font-size: 12px; color: #cbd5e1; margin-top: 2px; font-weight: 500;">📝 ${item.description}</div>` : ''}
+                                    ${item.type === 'driver' && item.description ? `<div style="font-size: 12px; color: #cbd5e1; margin-top: 2px; font-weight: 500;">📝 ${item.description}</div>` : ''}
+                                    ${item.type === 'parts' && item.notes ? `<div style="font-size: 12px; color: #cbd5e1; margin-top: 2px; font-weight: 500;">📝 ${item.notes}</div>` : ''}
                                 </div>
                                 <div style="text-align: right;">
-                                    <div style="font-size: 16px; font-weight: 700; color: #dc2626;">${parseFloat(item.amount || 0).toFixed(2)} MAD</div>
-                                    <button onclick="openParentSubmission(${item.parentTimestamp})" style="margin-top: 6px; background: white; color: #2563eb; border: 1px solid #bfdbfe; padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer;">${t('exp_open_submission')}</button>
+                                    <div style="font-size: 16px; font-weight: 700; color: #f87171;">${parseFloat(item.amount || 0).toFixed(2)} MAD</div>
+                                    <button onclick="openParentSubmission(${item.parentTimestamp})" style="margin-top: 6px; background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer;">${t('exp_open_submission')}</button>
                                 </div>
                             </div>
                         </div>
@@ -5329,11 +5518,11 @@
                 
                 let statusBadge;
                 if (submission.status === 'approved') {
-                    statusBadge = '<span style="background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">✅ ' + t('exp_approved') + '</span>';
+                    statusBadge = '<span style="background: rgba(34,197,94,0.15); color: #4ade80; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">✅ ' + t('exp_approved') + '</span>';
                 } else if (submission.status === 'rejected') {
-                    statusBadge = '<span style="background: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">❌ ' + t('exp_rejected') + '</span>';
+                    statusBadge = '<span style="background: rgba(239,68,68,0.15); color: #f87171; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">❌ ' + t('exp_rejected') + '</span>';
                 } else {
-                    statusBadge = '<span style="background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">⏳ ' + t('exp_pending') + '</span>';
+                    statusBadge = '<span style="background: rgba(245,158,11,0.15); color: #fbbf24; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;">⏳ ' + t('exp_pending') + '</span>';
                 }
                 
                 const expensesList = submission.expenses.map(exp => {
@@ -5361,16 +5550,16 @@
                     const expenseDate = formatDate(new Date(exp.date));
                     
                     return `
-                        <div style="display: flex; justify-content: space-between; padding: 8px; background: #f8fafc; border-radius: 6px; margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; padding: 8px; background: #14141f; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 5px;">
                             <div style="flex: 1;">
-                                <div style="font-size: 13px; font-weight: 600; color: #1e293b;">${icon} ${title}</div>
-                                <div style="font-size: 12px; color: #64748b; font-weight: 500;">${details}</div>
+                                <div style="font-size: 13px; font-weight: 600; color: #f1f5f9;">${icon} ${title}</div>
+                                <div style="font-size: 12px; color: #94a3b8; font-weight: 500;">${details}</div>
                                 <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">📅 ${expenseDate}</div>
-                                ${exp.type === 'fuel' && exp.description ? `<div style="font-size: 12px; color: #374151; margin-top: 2px; font-weight: 500;">📝 ${exp.description}</div>` : ''}
-                                ${exp.type === 'driver' && exp.description ? `<div style="font-size: 12px; color: #374151; margin-top: 2px; font-weight: 500;">📝 ${exp.description}</div>` : ''}
-                                ${exp.type === 'parts' && exp.notes ? `<div style="font-size: 12px; color: #374151; margin-top: 2px; font-weight: 500;">📝 ${exp.notes}</div>` : ''}
+                                ${exp.type === 'fuel' && exp.description ? `<div style="font-size: 12px; color: #cbd5e1; margin-top: 2px; font-weight: 500;">📝 ${exp.description}</div>` : ''}
+                                ${exp.type === 'driver' && exp.description ? `<div style="font-size: 12px; color: #cbd5e1; margin-top: 2px; font-weight: 500;">📝 ${exp.description}</div>` : ''}
+                                ${exp.type === 'parts' && exp.notes ? `<div style="font-size: 12px; color: #cbd5e1; margin-top: 2px; font-weight: 500;">📝 ${exp.notes}</div>` : ''}
                             </div>
-                            <div style="font-size: 14px; font-weight: 700; color: #dc2626;">
+                            <div style="font-size: 14px; font-weight: 700; color: #f87171;">
                                 ${exp.amount.toFixed(2)} MAD
                             </div>
                         </div>
@@ -5378,15 +5567,15 @@
                 }).join('');
                 
                 const cardHighlight = highlightedSubmissionTimestamp && Number(highlightedSubmissionTimestamp) === Number(submission.timestamp)
-                    ? 'box-shadow: 0 0 0 3px #bfdbfe;'
+                    ? 'box-shadow: 0 0 0 3px rgba(245,158,11,0.5);'
                     : '';
 
                 return `
-                    <div id="submitted-expense-sub-${submission.timestamp}" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #2563eb; ${cardHighlight}">
+                    <div id="submitted-expense-sub-${submission.timestamp}" style="background: #1b1b28; border: 1px solid rgba(255,255,255,0.07); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #f59e0b; ${cardHighlight}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <div>
-                                <div style="font-size: 11px; color: #64748b;">📤 Submitted: ${date} ${time}</div>
-                                <div style="font-size: 12px; color: #475569; margin-top: 2px; font-weight: 600;">${typeSummary}</div>
+                                <div style="font-size: 11px; color: #94a3b8;">📤 Submitted: ${date} ${time}</div>
+                                <div style="font-size: 12px; color: #cbd5e1; margin-top: 2px; font-weight: 600;">${typeSummary}</div>
                             </div>
                             ${statusBadge}
                         </div>
@@ -5395,9 +5584,9 @@
                             ${expensesList}
                         </div>
                         
-                        <div style="text-align: right; padding-top: 10px; border-top: 2px solid #e2e8f0;">
-                            <div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">${t('exp_total_amount')}</div>
-                            <div style="font-size: 20px; font-weight: 700; color: #dc2626;">
+                        <div style="text-align: right; padding-top: 10px; border-top: 2px solid rgba(255,255,255,0.08);">
+                            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 3px;">${t('exp_total_amount')}</div>
+                            <div style="font-size: 20px; font-weight: 700; color: #f87171;">
                                 ${submission.totalAmount.toFixed(2)} MAD
                             </div>
                         </div>
@@ -5430,15 +5619,15 @@
             
             // Update filter buttons
             document.querySelectorAll('.expense-date-filter-btn').forEach(btn => {
-                btn.style.background = 'white';
-                btn.style.color = '#64748b';
-                btn.style.borderColor = '#e2e8f0';
+                btn.style.background = '#1b1b28';
+                btn.style.color = '#94a3b8';
+                btn.style.borderColor = 'rgba(255,255,255,0.08)';
             });
             
             if (clickEvent && clickEvent.target) {
-                clickEvent.target.style.background = '#2563eb';
-                clickEvent.target.style.color = 'white';
-                clickEvent.target.style.borderColor = '#2563eb';
+                clickEvent.target.style.background = '#f59e0b';
+                clickEvent.target.style.color = '#14141f';
+                clickEvent.target.style.borderColor = '#f59e0b';
             }
             
             const data = loadData();
@@ -5453,14 +5642,14 @@
         function setSubmittedExpenseTypeFilter(type, clickEvent) {
             currentExpenseTypeFilter = type;
             document.querySelectorAll('.expense-type-filter-btn').forEach(btn => {
-                btn.style.background = 'white';
-                btn.style.color = '#64748b';
-                btn.style.borderColor = '#e2e8f0';
+                btn.style.background = '#1b1b28';
+                btn.style.color = '#94a3b8';
+                btn.style.borderColor = 'rgba(255,255,255,0.08)';
             });
             if (clickEvent && clickEvent.target) {
-                clickEvent.target.style.background = '#2563eb';
-                clickEvent.target.style.color = 'white';
-                clickEvent.target.style.borderColor = '#2563eb';
+                clickEvent.target.style.background = '#f59e0b';
+                clickEvent.target.style.color = '#14141f';
+                clickEvent.target.style.borderColor = '#f59e0b';
             }
             const data = loadData();
             renderSubmittedExpenses((data.expenses && data.expenses.submitted) || []);
@@ -5471,14 +5660,14 @@
             highlightedSubmissionTimestamp = null;
 
             document.querySelectorAll('.expense-view-mode-btn').forEach(btn => {
-                btn.style.background = 'white';
-                btn.style.color = '#64748b';
-                btn.style.borderColor = '#e2e8f0';
+                btn.style.background = '#1b1b28';
+                btn.style.color = '#94a3b8';
+                btn.style.borderColor = 'rgba(255,255,255,0.08)';
             });
             if (clickEvent && clickEvent.target) {
-                clickEvent.target.style.background = '#2563eb';
-                clickEvent.target.style.color = 'white';
-                clickEvent.target.style.borderColor = '#2563eb';
+                clickEvent.target.style.background = '#f59e0b';
+                clickEvent.target.style.color = '#14141f';
+                clickEvent.target.style.borderColor = '#f59e0b';
             }
 
             const data = loadData();
@@ -5492,12 +5681,12 @@
             const modeSubmissionBtn = document.getElementById('expense-view-mode-submission');
             const modeTypeBtn = document.getElementById('expense-view-mode-type');
             if (modeSubmissionBtn && modeTypeBtn) {
-                modeTypeBtn.style.background = 'white';
-                modeTypeBtn.style.color = '#64748b';
-                modeTypeBtn.style.borderColor = '#e2e8f0';
-                modeSubmissionBtn.style.background = '#2563eb';
-                modeSubmissionBtn.style.color = 'white';
-                modeSubmissionBtn.style.borderColor = '#2563eb';
+                modeTypeBtn.style.background = '#1b1b28';
+                modeTypeBtn.style.color = '#94a3b8';
+                modeTypeBtn.style.borderColor = 'rgba(255,255,255,0.08)';
+                modeSubmissionBtn.style.background = '#f59e0b';
+                modeSubmissionBtn.style.color = '#14141f';
+                modeSubmissionBtn.style.borderColor = '#f59e0b';
             }
 
             const data = loadData();
@@ -5514,14 +5703,14 @@
         function setSubmittedExpenseStatusFilter(status, clickEvent) {
             currentExpenseStatusFilter = status;
             document.querySelectorAll('.expense-status-filter-btn').forEach(btn => {
-                btn.style.background = 'white';
-                btn.style.color = '#64748b';
-                btn.style.borderColor = '#e2e8f0';
+                btn.style.background = '#1b1b28';
+                btn.style.color = '#94a3b8';
+                btn.style.borderColor = 'rgba(255,255,255,0.08)';
             });
             if (clickEvent && clickEvent.target) {
-                clickEvent.target.style.background = '#2563eb';
-                clickEvent.target.style.color = 'white';
-                clickEvent.target.style.borderColor = '#2563eb';
+                clickEvent.target.style.background = '#f59e0b';
+                clickEvent.target.style.color = '#14141f';
+                clickEvent.target.style.borderColor = '#f59e0b';
             }
             const data = loadData();
             renderSubmittedExpenses((data.expenses && data.expenses.submitted) || []);
