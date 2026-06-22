@@ -391,6 +391,16 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 💵 Cash on Hand: physical cash collected (minus expenses paid) since admin's last settlement -->
+            <div id="cash-on-hand-card" style="background: linear-gradient(135deg, rgba(16,185,129,0.20), rgba(5,150,105,0.08)); border: 1px solid rgba(16,185,129,0.35); border-radius: 16px; padding: 16px 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size: 12px; color:#86efac; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">💵 <span data-i18n="cash_on_hand">Cash on Hand</span></div>
+                    <div id="cash-on-hand-since" style="font-size:11px; color:#94a3b8;"></div>
+                </div>
+                <div id="cash-on-hand-amount" style="font-size:34px; font-weight:bold; color:#4ade80; margin-top:6px;">0.00 MAD</div>
+                <div id="cash-on-hand-breakdown" style="font-size:12px; color:#cbd5e1; margin-top:6px;"></div>
+            </div>
         </div>
 
         <div id="manual-view" class="view">
@@ -572,6 +582,12 @@
                     </div>
                     
                     <div id="submission-list"></div>
+
+                    <!-- Archived submissions: loaded on demand to keep the app fast -->
+                    <div style="margin-top: 16px; text-align: center;">
+                        <button id="load-archived-history-btn" onclick="toggleArchivedSubmissions()" style="background: #1b1b28; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">📦 Load Archived History</button>
+                    </div>
+                    <div id="archived-submission-list" style="margin-top: 12px;"></div>
                 </div>
             </div>
         </div>
@@ -685,6 +701,12 @@
                     <div id="submitted-expenses-list">
                         <p style="text-align: center; color: #94a3b8; padding: 20px;" data-i18n="exp_no_submitted">No submitted expenses yet</p>
                     </div>
+
+                    <!-- Archived expenses: loaded on demand to keep the app fast -->
+                    <div style="margin-top: 16px; text-align: center;">
+                        <button id="load-archived-expenses-btn" onclick="toggleArchivedExpenses()" style="background: #1b1b28; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">📦 Load Archived Expenses</button>
+                    </div>
+                    <div id="archived-expenses-list" style="margin-top: 12px;"></div>
                 </div>
             </div>
         </div>
@@ -1715,6 +1737,16 @@
         
         function initApp() {
             console.log('🚀 Initializing app...');
+
+            // 💵 Cash on Hand: start the settlement listener FIRST so it can't be
+            // skipped if any later init step throws.
+            try {
+                console.log('💵 Initializing cash-on-hand settlement listener...');
+                listenForCashSettlement();
+                updateCashOnHand();
+            } catch (e) {
+                console.error('❌ Failed to start cash listener early:', e);
+            }
             
             // Check if we need to recover data from Firebase
             recoverDataFromFirebase();
@@ -2106,6 +2138,10 @@
                 remaining: "Remaining:",
                 payment_history: "Payment History",
                 payments: "payments",
+                cash_on_hand: "Cash on Hand",
+                cash_since: "since",
+                cash_not_settled: "all time (not settled yet)",
+                exp_title_short: "expenses",
                 sessions: "sessions",
                 session: "session",
                 client: "Client:",
@@ -2276,6 +2312,10 @@
                 remaining: "المتبقي:",
                 payment_history: "سجل المدفوعات",
                 payments: "دفعات",
+                cash_on_hand: "النقد في اليد",
+                cash_since: "منذ",
+                cash_not_settled: "كل الوقت (لم تتم التسوية بعد)",
+                exp_title_short: "مصاريف",
                 sessions: "جلسات",
                 session: "جلسة",
                 client: "الزبون:",
@@ -2848,6 +2888,7 @@
 
         function renderHistory() {
             const data = loadData();
+            updateCashOnHand();
             const container = document.getElementById('history-list');
             if (data.history.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">No history yet</p>';
@@ -3401,6 +3442,7 @@
 
         function renderSubmissionHistory() {
             const data = loadData();
+            updateCashOnHand();
             const submissions = data.submissions || [];
             const container = document.getElementById('submission-list');
 
@@ -3590,6 +3632,344 @@
                     issueNoteBlock +
                     '</div></div>';
             }).join('');
+        }
+
+        // ========================================
+        // 📦 ARCHIVED HISTORY / EXPENSES (read-only, loaded on demand)
+        // Archived items live in separate Firebase nodes so the daily live
+        // listeners stay small and the app starts fast. We only fetch them
+        // with a one-time get() when the worker taps the button.
+        // ========================================
+        let _archivedSubmissionsShown = false;
+        let _archivedExpensesShown = false;
+
+        window.toggleArchivedSubmissions = async function() {
+            const container = document.getElementById('archived-submission-list');
+            const btn = document.getElementById('load-archived-history-btn');
+            if (!container || !btn) return;
+
+            if (_archivedSubmissionsShown) {
+                container.innerHTML = '';
+                _archivedSubmissionsShown = false;
+                btn.textContent = '📦 Load Archived History';
+                return;
+            }
+
+            btn.textContent = '⏳ Loading...';
+            btn.disabled = true;
+            try {
+                const snap = await window.firebaseGet(window.firebaseRef(window.firebaseDB, 'submissions_archive_v2'));
+                const workerNorm = normalizeWorkerName(getWorkerName());
+                let list = [];
+                if (snap.exists()) {
+                    list = Object.values(snap.val()).filter(s => normalizeWorkerName(s.workerName) === workerNorm);
+                }
+                list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                if (list.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:16px;">No archived history.</p>';
+                } else {
+                    container.innerHTML =
+                        '<div style="font-size:12px; color:#94a3b8; margin:4px 0 8px; text-align:center;">📦 ' + list.length + ' archived submission(s) — read only</div>' +
+                        list.map(renderArchivedSubmissionCard).join('');
+                }
+                _archivedSubmissionsShown = true;
+                btn.textContent = '🔼 Hide Archived History';
+            } catch (err) {
+                console.error('❌ Archived history load failed:', err);
+                container.innerHTML = '<p style="text-align:center; color:#f87171; padding:16px;">Failed to load archived history. Check your connection.</p>';
+                btn.textContent = '📦 Load Archived History';
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        function renderArchivedSubmissionCard(s) {
+            const paymentStatus = s.paymentStatus || 'unpaid';
+            const totalPaid = parseFloat(s.totalPaid || 0);
+            const totalAmount = parseFloat(s.totalPayment || 0);
+            let pColor = '#ef4444', pIcon = '🔴', pText = t('unpaid').toUpperCase();
+            if (paymentStatus === 'fully_paid') {
+                if (s.fullyPaidNote) { pColor = '#f59e0b'; pIcon = '🟠'; pText = 'PAYMENT CLOSED'; }
+                else { pColor = '#22c55e'; pIcon = '✅'; pText = t('fully_paid').toUpperCase(); }
+            } else if (paymentStatus === 'partially_paid') {
+                pColor = '#f59e0b'; pIcon = '🟡'; pText = t('partially_paid').toUpperCase();
+            }
+            const clientName = s.clientName || (s.sessions && s.sessions[0] ? (s.sessions[0].clientName || s.sessions[0].job) : 'Unknown');
+            const jobSites = s.sessions ? [...new Set(s.sessions.map(se => se.jobSite || se.job || 'Unknown'))].join(', ') : 'Unknown';
+            const submissionDate = new Date(s.timestamp || s.date);
+            const workDateStr = (s.sessions && s.sessions[0] && s.sessions[0].workDate)
+                ? formatDate(new Date(s.sessions[0].workDate))
+                : formatDate(submissionDate);
+            const sessCount = s.sessions ? s.sessions.length : 0;
+            const paymentsHistory = (s.payments || []).map(p => {
+                const pd = new Date(p.date);
+                return '<div style="font-size:11px; color:#94a3b8; padding:3px 0;">✅ ' + Number(p.amount || 0).toFixed(2) + ' MAD - ' + formatDate(pd) + '</div>';
+            }).join('');
+
+            return '<div style="background:#161620; border:1px solid rgba(255,255,255,0.06); padding:12px; border-radius:8px; margin-bottom:10px; border-left:4px solid ' + pColor + '; opacity:0.92;">' +
+                '<div style="font-size:12px; color:#94a3b8; margin-bottom:5px;">📅 ' + workDateStr + ' · 📦 archived</div>' +
+                '<div style="font-size:13px; color:#94a3b8; margin-bottom:3px;">📍 ' + jobSites + '</div>' +
+                '<div style="font-weight:600; font-size:16px; color:#f1f5f9; margin-bottom:8px;">👤 ' + clientName + '</div>' +
+                '<div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px; color:#cbd5e1;">' +
+                '<span>' + sessCount + ' ' + (sessCount === 1 ? t('session') : t('sessions')) + ' · ' + (s.totalHours || '') + '</span>' +
+                '<strong style="color:#60a5fa;">' + (s.totalPayment || 0) + ' MAD</strong></div>' +
+                '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                '<span style="font-size:12px; font-weight:600; color:' + pColor + ';">' + pIcon + ' ' + pText + '</span>' +
+                '<span style="font-size:12px; color:#94a3b8;">' + totalPaid.toFixed(2) + ' / ' + totalAmount.toFixed(2) + ' MAD</span></div>' +
+                (paymentsHistory ? '<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);">' + paymentsHistory + '</div>' : '') +
+                '</div>';
+        }
+
+        window.toggleArchivedExpenses = async function() {
+            const container = document.getElementById('archived-expenses-list');
+            const btn = document.getElementById('load-archived-expenses-btn');
+            if (!container || !btn) return;
+
+            if (_archivedExpensesShown) {
+                container.innerHTML = '';
+                _archivedExpensesShown = false;
+                btn.textContent = '📦 Load Archived Expenses';
+                return;
+            }
+
+            btn.textContent = '⏳ Loading...';
+            btn.disabled = true;
+            try {
+                const snap = await window.firebaseGet(window.firebaseRef(window.firebaseDB, 'expenseSubmissions_archive_v2'));
+                const norm = (n) => String(n || '').trim().toLowerCase();
+                const workerNorm = norm(getWorkerName());
+                let list = [];
+                if (snap.exists()) {
+                    list = Object.values(snap.val()).filter(s => norm(s.workerName) === workerNorm);
+                }
+                list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                if (list.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:16px;">No archived expenses.</p>';
+                } else {
+                    container.innerHTML =
+                        '<div style="font-size:12px; color:#94a3b8; margin:4px 0 8px; text-align:center;">📦 ' + list.length + ' archived expense submission(s) — read only</div>' +
+                        list.map(renderArchivedExpenseCard).join('');
+                }
+                _archivedExpensesShown = true;
+                btn.textContent = '🔼 Hide Archived Expenses';
+            } catch (err) {
+                console.error('❌ Archived expenses load failed:', err);
+                container.innerHTML = '<p style="text-align:center; color:#f87171; padding:16px;">Failed to load archived expenses. Check your connection.</p>';
+                btn.textContent = '📦 Load Archived Expenses';
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        function renderArchivedExpenseCard(sub) {
+            const status = sub.status || 'pending';
+            let badge;
+            if (status === 'approved') {
+                badge = '<span style="background:rgba(34,197,94,0.15); color:#4ade80; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:600;">✅ ' + t('exp_approved') + '</span>';
+            } else if (status === 'rejected') {
+                badge = '<span style="background:rgba(239,68,68,0.15); color:#f87171; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:600;">❌ ' + t('exp_rejected') + '</span>';
+            } else {
+                badge = '<span style="background:rgba(245,158,11,0.15); color:#fbbf24; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:600;">⏳ ' + t('exp_pending') + '</span>';
+            }
+            const submittedAt = new Date(sub.date || sub.timestamp || Date.now());
+            const items = (sub.expenses || []).map(exp => {
+                let icon = '📄', title = exp.type || 'Expense', details = '';
+                if (exp.type === 'repair') { icon = '🔧'; title = t('exp_repair'); details = exp.description || ''; }
+                else if (exp.type === 'fuel') { icon = '⛽'; title = t('exp_fuel'); details = (exp.liters || '') + 'L × ' + (exp.pricePerLiter || '') + ' MAD'; }
+                else if (exp.type === 'parts') { icon = '⚙️'; title = t('exp_parts'); details = exp.partName || exp.notes || ''; }
+                else if (exp.type === 'driver') { icon = '🚚'; title = t('exp_driver'); details = exp.driverName || ''; }
+                return '<div style="display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#cbd5e1; padding:4px 0;">' +
+                    '<span>' + icon + ' ' + title + (details ? ' · <span style="color:#94a3b8;">' + details + '</span>' : '') + '</span>' +
+                    '<strong style="color:#f87171; white-space:nowrap;">' + Number(exp.amount || 0).toFixed(2) + ' MAD</strong></div>';
+            }).join('');
+
+            return '<div style="background:#161620; border:1px solid rgba(255,255,255,0.06); padding:12px; border-radius:8px; margin-bottom:10px; opacity:0.92;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">' +
+                '<span style="font-size:12px; color:#94a3b8;">📅 ' + formatDate(submittedAt) + ' · 📦 archived</span>' + badge + '</div>' +
+                items +
+                '<div style="display:flex; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08); font-size:13px;">' +
+                '<span style="color:#94a3b8;">' + t('total_payment') + '</span>' +
+                '<strong style="color:#f87171;">' + Number(sub.totalAmount || 0).toFixed(2) + ' MAD</strong></div>' +
+                '</div>';
+        }
+
+        // ========================================
+        // 💵 CASH ON HAND (physical cash since admin's last settlement)
+        // Counts client PAYMENTS collected (money in) minus EXPENSES paid
+        // (money out) that happened AFTER the admin's last "Settle Cash" action.
+        // The settlement timestamp is controlled by the admin via Firebase.
+        // ========================================
+        let _cashLastSettledAt = 0;
+
+        // Must match the admin app exactly so both resolve the same Firebase key.
+        function cashSettlementKey(name) {
+            return String(name || '').trim().toLowerCase().replace(/[.#$/\[\]]/g, '_').replace(/\s+/g, '_');
+        }
+
+        // Resolve the worker name WITHOUT getWorkerName() (that lives in the module
+        // script and isn't in scope here). Use loadData()/localStorage directly.
+        function _cashWorkerName() {
+            let data = {};
+            try { data = loadData() || {}; } catch (e) {}
+            return String(data.workerName || localStorage.getItem('workerName') || '').trim();
+        }
+
+        function cashSettlementCandidates() {
+            let data = {};
+            try { data = loadData() || {}; } catch (e) {}
+            const rawNames = [
+                data.workerName,
+                localStorage.getItem('workerName')
+            ];
+            const unique = [];
+            rawNames.forEach(n => {
+                const raw = String(n || '').trim();
+                if (!raw) return;
+                const keyA = cashSettlementKey(raw);
+                const keyB = raw.toLowerCase(); // defensive fallback for legacy/manual keys
+                [keyA, keyB].forEach(k => {
+                    if (k && !unique.includes(k)) unique.push(k);
+                });
+            });
+            return unique;
+        }
+
+        function _toMs(v) {
+            if (typeof v === 'number') return v;
+            if (!v) return 0;
+            const n = new Date(v).getTime();
+            return isNaN(n) ? 0 : n;
+        }
+
+        // Raw settlement node from Firebase (set by the listener). We resolve the
+        // actual match on EVERY render so it works even if the worker name / local
+        // data become available after the Firebase data arrives.
+        let _cashSettlementsAll = null;
+
+        function resolveCashSettlement() {
+            const all = _cashSettlementsAll;
+            if (!all || typeof all !== 'object') {
+                return { settledAt: 0, status: 'waiting for firebase…', candidates: [], availableKeys: [], matched: false };
+            }
+            let candidates = [];
+            try { candidates = cashSettlementCandidates(); } catch (e) { candidates = []; }
+            let matched = null;
+            for (const k of candidates) {
+                if (all[k]) { matched = all[k]; break; }
+            }
+            if (!matched) {
+                const currentName = _cashWorkerName().toLowerCase();
+                if (currentName) {
+                    Object.values(all).some(v => {
+                        const vName = String((v && v.workerName) || '').trim().toLowerCase();
+                        if (vName && vName === currentName) { matched = v; return true; }
+                        return false;
+                    });
+                }
+            }
+            return {
+                settledAt: (matched && matched.settledAt) ? Number(matched.settledAt) : 0,
+                status: 'ok',
+                candidates: candidates,
+                availableKeys: Object.keys(all),
+                matched: !!matched
+            };
+        }
+
+        function computeCashOnHand() {
+            const data = loadData();
+            const since = resolveCashSettlement().settledAt || 0;
+            let cashIn = 0, payCount = 0;
+            (data.submissions || []).forEach(s => {
+                (s.payments || []).forEach(p => {
+                    if (_toMs(p.date) > since) { cashIn += parseFloat(p.amount) || 0; payCount++; }
+                });
+            });
+            let cashOut = 0, expCount = 0;
+            if (data.expenses) {
+                const allExp = [];
+                (data.expenses.unsent || []).forEach(e => allExp.push(e));
+                (data.expenses.submitted || []).forEach(sub => (sub.expenses || []).forEach(e => allExp.push(e)));
+                allExp.forEach(e => {
+                    const ts = e.timestamp ? _toMs(e.timestamp) : _toMs(e.date);
+                    if (ts > since) { cashOut += parseFloat(e.amount) || 0; expCount++; }
+                });
+            }
+            return { cashIn, cashOut, net: cashIn - cashOut, payCount, expCount, since };
+        }
+
+        function updateCashOnHand() {
+            const amountEl = document.getElementById('cash-on-hand-amount');
+            if (!amountEl) return;
+            const r = computeCashOnHand();
+            amountEl.textContent = r.net.toFixed(2) + ' MAD';
+            amountEl.style.color = r.net >= 0 ? '#4ade80' : '#f87171';
+
+            const sinceEl = document.getElementById('cash-on-hand-since');
+            if (sinceEl) {
+                sinceEl.textContent = r.since
+                    ? ('🔄 ' + t('cash_since') + ' ' + formatDate(new Date(r.since)))
+                    : ('🔄 ' + t('cash_not_settled'));
+            }
+            const bdEl = document.getElementById('cash-on-hand-breakdown');
+            if (bdEl) {
+                bdEl.innerHTML =
+                    '<span style="color:#4ade80;">＋ ' + r.cashIn.toFixed(2) + ' MAD</span> ' +
+                    '<span style="color:#94a3b8;">(' + r.payCount + ' ' + t('payments') + ')</span> &nbsp;·&nbsp; ' +
+                    '<span style="color:#f87171;">－ ' + r.cashOut.toFixed(2) + ' MAD</span> ' +
+                    '<span style="color:#94a3b8;">(' + r.expCount + ' ' + t('exp_title_short') + ')</span>';
+            }
+        }
+
+        let _cashListenerStarted = false;
+        window._cashListenerStatus = 'not started';
+        function listenForCashSettlement() {
+            if (_cashListenerStarted) { return; }
+            if (!window.firebaseRef || !window.firebaseDB || !window.firebaseOnValue) {
+                window._cashListenerStatus = 'firebase not ready yet';
+                updateCashOnHand();
+                return; // bootstrap will retry
+            }
+            try {
+                _cashListenerStarted = true;
+                window._cashListenerStatus = 'attaching…';
+                const settleRootRef = window.firebaseRef(window.firebaseDB, 'cashSettlements_v2');
+
+                const onSnap = (all, source) => {
+                    _cashSettlementsAll = all || {};
+                    window._cashListenerStatus = 'ok (' + source + ')';
+                    console.log('💵 Cash settlements received (' + source + '):', _cashSettlementsAll);
+                    updateCashOnHand();
+                };
+
+                // One-time fetch first.
+                if (window.firebaseGet) {
+                    window.firebaseGet(settleRootRef)
+                        .then(snap => onSnap(snap && snap.exists() ? (snap.val() || {}) : {}, 'get'))
+                        .catch(err => {
+                            window._cashListenerStatus = 'GET error: ' + (err && err.message);
+                            console.error('❌ Cash settlement GET failed:', err);
+                            updateCashOnHand();
+                        });
+                }
+
+                // Live listener for future settlements.
+                window.firebaseOnValue(settleRootRef,
+                    (snap) => onSnap(snap && snap.exists() ? (snap.val() || {}) : {}, 'live'),
+                    (err) => {
+                        window._cashListenerStatus = 'LIVE error: ' + (err && err.message);
+                        console.error('❌ Cash settlement LIVE failed:', err);
+                        updateCashOnHand();
+                    }
+                );
+            } catch (err) {
+                _cashListenerStarted = false; // allow retry
+                window._cashListenerStatus = 'threw: ' + (err && err.message);
+                console.error('❌ Cash settlement listener failed:', err);
+                updateCashOnHand();
+            }
         }
 
         async function markSubmissionIssue(timestamp) {
@@ -4956,6 +5336,7 @@
                 };
                 saveData(data);
             }
+            updateCashOnHand();
             
             // Render unsent expenses
             renderUnsentExpenses(data.expenses.unsent);
@@ -5849,6 +6230,34 @@
         // if ('serviceWorker' in navigator) {
         //     navigator.serviceWorker.register('sw.js').catch(function() {});
         // }
+
+        // ========================================
+        // 💵 CASH LISTENER BOOTSTRAP
+        // Starts the settlement listener independently of initApp(), retrying
+        // until Firebase is ready. This guarantees the Cash on Hand card syncs
+        // with the admin's settlement even if the normal init path is skipped.
+        // ========================================
+        (function bootstrapCashListener() {
+            let tries = 0;
+            const iv = setInterval(function () {
+                tries++;
+                const ready = window.firebaseOnValue && window.firebaseRef && window.firebaseDB && typeof listenForCashSettlement === 'function';
+                if (ready) {
+                    clearInterval(iv);
+                    try {
+                        console.log('💵 Bootstrap starting cash settlement listener (try ' + tries + ')');
+                        listenForCashSettlement();
+                        updateCashOnHand();
+                    } catch (e) {
+                        console.error('❌ Bootstrap cash listener error:', e);
+                    }
+                } else if (tries > 150) { // ~30s
+                    clearInterval(iv);
+                    window._cashDebug = { status: 'firebase never ready (bootstrap timeout)', candidates: [], availableKeys: [], matched: false };
+                    try { updateCashOnHand(); } catch (e) {}
+                }
+            }, 200);
+        })();
     </script>
 </body>
 </html>
